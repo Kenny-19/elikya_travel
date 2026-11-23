@@ -13,3 +13,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # URL Supabase et clé PUBLISHABLE sont publiques par conception : un site web doit les contenir
+  # (config.js, en-tête CSP). Le scan de secrets Netlify reste actif pour tout le reste.
+  # Ne JAMAIS mettre une clé secrète / service_role dans SUPABASE_KEY (build-site.js la refuse).
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL,SUPABASE_KEY"
