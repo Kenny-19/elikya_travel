@@ -5,8 +5,11 @@
 [build]
   command = "node scripts/build-site.js"
   publish = "dist/site"
-  # Ne reconstruit que si le site a changé (un envoi qui ne touche que agents/ ou docs/ est ignoré)
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts netlify.toml"
+  # Ne reconstruit que si le site a changé (un envoi qui ne touche que agents/ ou docs/ est ignoré).
+  # Code 0 = on saute la construction. On ne saute QUE s'il existe un déploiement précédent
+  # différent du commit actuel et que web/, scripts/ et netlify.toml n'ont pas bougé
+  # (au premier déploiement après liaison, CACHED_COMMIT_REF est vide ou égal → on construit).
+  ignore = "[ -n \"$CACHED_COMMIT_REF\" ] && [ \"$CACHED_COMMIT_REF\" != \"$COMMIT_REF\" ] && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts netlify.toml"
 
 [build.environment]
   NODE_VERSION = "20"
