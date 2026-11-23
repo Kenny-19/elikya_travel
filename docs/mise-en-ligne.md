@@ -39,6 +39,11 @@ comment construire le site ; il ne reconstruit que si `web/`, `scripts/` ou `net
 3. Ensuite, chaque `git push` sur `main` met le site à jour en ~1 minute (onglet Deploys pour suivre).
 `web/config.js` et `agents/lib/config.dart` ne sont **jamais** envoyés sur GitHub (`.gitignore`).
 
+> **Scan de secrets Netlify** : il bloquait la construction parce que l'URL et la clé publishable
+> apparaissent dans le site produit (`config.js`, CSP). C'est voulu — elles sont publiques par
+> conception — donc `netlify.toml` les exclut du scan (`SECRETS_SCAN_OMIT_KEYS`), qui reste actif
+> pour tout le reste. Une vraie clé secrète dans `SUPABASE_KEY` est refusée par `build-site.js`.
+
 ### Option B — Cloudflare Pages (même principe)
 dash.cloudflare.com → Workers & Pages → Create → Pages → **Upload assets** → glisser `dist/site`.
 Le fichier `_headers` est aussi pris en compte.
