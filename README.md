@@ -39,7 +39,7 @@ docs/                   architecture.md, roadmap.md
 - ✅ Rôles (db/roles.sql) · site réservé à la direction
 - ✅ App agents Flutter : connexion, menu par rôle, hors ligne SQLite, Voyage, Caisse, Mobile Money, Fourniture, Clients
 - ✅ Site : tableau de bord + rapports mensuels (export Excel, impression PDF)
-- 🟡 Mise en ligne du site : prêt (`node scripts/build-site.js`, voir `docs/mise-en-ligne.md`) · ⬜ installeur Windows de l'app agents
+- ✅ Site en ligne : https://elikya0travel.netlify.app (mises à jour : `git push`, voir `docs/mise-en-ligne.md`) · ⬜ installeur Windows de l'app agents
 
 ## Sécurité
 `web/config.js` (clé anon, publique) est **ignoré par git**. Ne committe jamais la clé

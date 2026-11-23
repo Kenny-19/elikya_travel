@@ -100,7 +100,7 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 - `.gitignore` exclut déjà `web/config.js` et `.env`.
 
 ## Roadmap
-Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse, Mobile Money, Fourniture, Clients) ✅. Site direction complet (tableau de bord, rapports, tous les modules) ✅. Mise en ligne : `node scripts/build-site.js` puis dépôt de `dist/site` (docs/mise-en-ligne.md). Prochain lot : **installeur Windows** de l'app agents.
+Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse, Mobile Money, Fourniture, Clients) ✅. Site direction complet (tableau de bord, rapports, tous les modules) ✅. Site en ligne : https://elikya0travel.netlify.app — dépôt GitHub `Kenny-19/elikya_travel` (branche main), Netlify reconstruit via `netlify.toml` (variables SUPABASE_URL / SUPABASE_KEY). Prochain lot : **installeur Windows** de l'app agents.
 
 
 
