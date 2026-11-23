@@ -14,15 +14,15 @@ Elikya.registerModule({
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Caisse &amp; Finances</h1>'+
         '<p>Une session par jour et par agent. Les totaux sont exprimés en USD (CDF converti au taux de la table devises).</p></div>'+
         '<div class="toolbar" style="margin:0">'+
-          '<button class="btn" id="openBtn">＋ Ouvrir une session</button>'+
-          '<button class="btn gold" id="newBtn" style="width:auto">＋ Mouvement</button>'+
+          '<button class="btn" id="openBtn" data-ecriture>＋ Ouvrir une session</button>'+
+          '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Mouvement</button>'+
         '</div></div>'+
 
       // sélection de session
       '<div class="toolbar">'+
         '<div class="field" style="margin:0;min-width:280px"><select id="sessSel"></select></div>'+
         '<span id="sessPill"></span>'+
-        '<button class="btn" id="closeBtn" style="margin-left:auto">Clôturer la session</button>'+
+        '<button class="btn" id="closeBtn" data-ecriture style="margin-left:auto">Clôturer la session</button>'+
         '<button class="btn" id="refreshBtn">↻ Rafraîchir</button>'+
       '</div>'+
 
@@ -32,7 +32,7 @@ Elikya.registerModule({
       '<div class="card hidden" id="ecartCard" style="margin-bottom:16px"></div>'+
 
       // formulaire : ouverture de session
-      '<div class="card hidden" id="openCard" style="margin-bottom:16px">'+
+      '<div class="card hidden" id="openCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 12px">Ouvrir une session de caisse</h3>'+
         '<form id="oForm"><div class="formgrid">'+
           field('Jour','<input type="date" id="oJour" required>')+
@@ -41,7 +41,7 @@ Elikya.registerModule({
       '</div>'+
 
       // formulaire : mouvement
-      '<div class="card hidden" id="formCard" style="margin-bottom:16px">'+
+      '<div class="card hidden" id="formCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 12px">Nouveau mouvement</h3>'+
         '<form id="mForm"><div class="formgrid">'+
           field('Sens','<select id="fSens"><option value="entree">Entrée</option><option value="sortie">Sortie</option></select>')+
@@ -54,7 +54,7 @@ Elikya.registerModule({
       '</div>'+
 
       // formulaire : clôture
-      '<div class="card hidden" id="closeCard" style="margin-bottom:16px">'+
+      '<div class="card hidden" id="closeCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 6px">Clôturer la session</h3>'+
         '<p style="margin:0 0 12px;color:var(--muted);font-size:13px">Saisis le solde réellement compté. L’écart avec le solde théorique est conservé pour le suivi.</p>'+
         '<form id="cForm"><div class="formgrid">'+
@@ -121,7 +121,7 @@ Elikya.registerModule({
       var rows = $('#rows');
       updateHeader();
       if(!current){
-        rows.innerHTML = '<tr><td colspan="6" style="padding:26px;text-align:center;color:var(--muted)">Aucune session de caisse. Clique « Ouvrir une session ».</td></tr>';
+        rows.innerHTML = '<tr><td colspan="6" style="padding:26px;text-align:center;color:var(--muted)">Aucune session de caisse.'+h.invite('Clique « Ouvrir une session ».')+'</td></tr>';
         setKpis(0,0,0); $('#listCount').textContent='—'; return;
       }
       rows.innerHTML = h.loadingRow(6);

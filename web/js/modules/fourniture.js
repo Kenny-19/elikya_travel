@@ -25,11 +25,11 @@ Elikya.registerModule({
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Fourniture</h1>'+
         '<p>Catalogue et commandes clients. Stock = inventaire relevé ; montants en USD.</p></div>'+
         '<div class="toolbar" style="margin:0"><div class="seg" id="seg"><button data-v="catalogue">Catalogue</button><button data-v="commandes">Commandes</button></div>'+
-        '<button class="btn" id="refreshBtn">↻</button><button class="btn gold" id="newBtn" style="width:auto"></button></div></div>'+
+        '<button class="btn" id="refreshBtn">↻</button><button class="btn gold" id="newBtn" data-ecriture style="width:auto"></button></div></div>'+
       '<div class="row k4" id="kpis" style="margin-bottom:16px"></div>'+
 
       // formulaire produit (création / modification-inventaire)
-      '<div class="card hidden" id="pCard" style="margin-bottom:16px"><h3 id="pTitle"></h3>'+
+      '<div class="card hidden" id="pCard" data-ecriture style="margin-bottom:16px"><h3 id="pTitle"></h3>'+
         '<form id="pForm"><div class="formgrid">'+
           field('Référence','<input id="pRef" placeholder="Ex. TUY-110" required>')+
           field('Désignation','<input id="pDes" required>')+
@@ -42,7 +42,7 @@ Elikya.registerModule({
         '<button class="btn" type="button" data-cancel="pCard">Annuler</button></div></form></div>'+
 
       // formulaire commande
-      '<div class="card hidden" id="cCard" style="margin-bottom:16px"><h3>Nouvelle commande</h3>'+
+      '<div class="card hidden" id="cCard" data-ecriture style="margin-bottom:16px"><h3>Nouvelle commande</h3>'+
         '<form id="cForm"><div class="formgrid">'+
           field('Client','<select id="cClient" required></select>')+
           field('Statut','<select id="cStatut"><option value="a_livrer">À livrer</option><option value="brouillon">Brouillon</option></select>')+
@@ -97,8 +97,8 @@ Elikya.registerModule({
           '<td class="num tnum">'+st+' '+esc(p.unite||'')+'</td><td class="num tnum">'+(re||'—')+'</td>'+
           '<td class="num tnum" style="'+(dispo < 0 ? 'color:var(--crit);font-weight:700' : '')+'">'+dispo+'</td>'+
           '<td class="num tnum">'+usd(p.prix)+'</td><td>'+etat(p, dispo)+'</td>'+
-          '<td><button class="lnk" data-edit="'+p.id+'">Modifier</button></td></tr>';
-      }).join('') : empty(9, 'Aucun produit. Clique « Nouveau produit ».');
+          '<td><button class="lnk" data-ecriture data-edit="'+p.id+'">Modifier</button></td></tr>';
+      }).join('') : empty(9, 'Aucun produit.'+h.invite('Clique « Nouveau produit ».')+'');
     }
 
     function drawCommandes(){
@@ -110,14 +110,14 @@ Elikya.registerModule({
       $('#thead').innerHTML = '<tr><th>Réf.</th><th>Client</th><th>Date</th><th class="num">Lignes</th><th class="num">Total</th><th>Statut</th></tr>';
       $('#rows').innerHTML = commandes.length ? commandes.map(function(c){
         var st = STATUTS[c.statut] || [c.statut,'neutral'];
-        var statut = (c.statut === 'brouillon' || c.statut === 'a_livrer')
+        var statut = !Elikya.readOnly && (c.statut === 'brouillon' || c.statut === 'a_livrer')
           ? '<select data-statut="'+c.id+'" style="font:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--ink)">'+
               Object.keys(STATUTS).map(function(k){ return '<option value="'+k+'"'+(k === c.statut ? ' selected' : '')+'>'+STATUTS[k][0]+'</option>'; }).join('')+'</select>'
           : h.pill(st[0], st[1]);
         var d = c.cree_le ? new Date(c.cree_le).toLocaleDateString('fr-FR') : '—';
         return '<tr><td><span class="mono-ref">'+esc(c.ref)+'</span></td><td>'+esc((c.clients && c.clients.nom) || '—')+'</td><td class="tnum">'+d+'</td>'+
           '<td class="num tnum">'+(nb[c.id]||0)+'</td><td class="num tnum"><b>'+usd(c.total)+'</b></td><td>'+statut+'</td></tr>';
-      }).join('') : empty(6, 'Aucune commande. Clique « Nouvelle commande ».');
+      }).join('') : empty(6, 'Aucune commande.'+h.invite('Clique « Nouvelle commande ».')+'');
     }
 
     // ----- produit -----

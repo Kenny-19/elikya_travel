@@ -12,11 +12,11 @@ Elikya.registerModule({
       '<div class="banner">Module Voyage · suivi des dossiers (billets, visa, hôtel, assurance, package).</div>'+
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Voyage</h1>'+
         '<p>Dossiers clients lus et enregistrés en temps réel dans la base.</p></div>'+
-        '<button class="btn gold" id="newBtn" style="width:auto">＋ Nouveau dossier</button></div>'+
+        '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Nouveau dossier</button></div>'+
       '<div class="row k4" style="margin-bottom:16px">'+
         kpi('kTotal','Dossiers')+kpi('kOk','Confirmés / payés')+kpi('kPend','En cours / devis')+kpi('kSum','Montant total')+
       '</div>'+
-      '<div class="card hidden" id="formCard" style="margin-bottom:16px">'+
+      '<div class="card hidden" id="formCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 12px">Nouveau dossier</h3>'+
         '<form id="dForm"><div class="formgrid">'+
           field('Client','<select id="fClient" required></select>')+
@@ -52,7 +52,7 @@ Elikya.registerModule({
       if(res.error){ rows.innerHTML = '<tr><td colspan="6" style="padding:22px;text-align:center;color:var(--crit)">Erreur : '+res.error.message+'</td></tr>'; return; }
       var data = res.data||[];
       if(!data.length){
-        rows.innerHTML = '<tr><td colspan="6" style="padding:26px;text-align:center;color:var(--muted)">Aucun dossier. Clique « Nouveau dossier ».</td></tr>';
+        rows.innerHTML = '<tr><td colspan="6" style="padding:26px;text-align:center;color:var(--muted)">Aucun dossier.'+h.invite('Clique « Nouveau dossier ».')+'</td></tr>';
       } else {
         rows.innerHTML = data.map(function(d){
           var st = STATUTS[d.statut] || [d.statut,'neutral'];

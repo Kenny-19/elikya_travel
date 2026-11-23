@@ -216,7 +216,10 @@
     await refreshCounts();
   }
 
+  var LECTURE_SEULE = { data:null, error:{ message:'Site en lecture seule : les saisies se font dans l’application des agents.' }, offline:false };
+
   async function insert(table, row){
+    if(E.readOnly) return LECTURE_SEULE;
     row = Object.assign({}, row);
     var k = keyOf(table);
     if(row[k] == null && k === 'id') row.id = uuid();
@@ -237,6 +240,7 @@
   }
 
   async function update(table, id, patch){
+    if(E.readOnly) return LECTURE_SEULE;
     var k = keyOf(table);
     if(state.online && E.db){
       var r = await run(E.db.from(table).update(patch).eq(k, id).select());

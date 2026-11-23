@@ -15,11 +15,11 @@ Elikya.registerModule({
       '<div class="banner">Module Mobile Money · soldes relevés par opérateur et journal des transactions (dépôt, retrait, transfert).</div>'+
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Mobile Money</h1>'+
         '<p>Montants en USD. Les soldes sont des relevés saisis à la main, ils ne sont pas recalculés.</p></div>'+
-        '<button class="btn gold" id="newBtn" style="width:auto">＋ Nouvelle transaction</button></div>'+
+        '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Nouvelle transaction</button></div>'+
 
       '<div class="row k3" id="comptes" style="margin-bottom:16px"></div>'+
 
-      '<div class="card hidden" id="formCard" style="margin-bottom:16px">'+
+      '<div class="card hidden" id="formCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 12px">Nouvelle transaction</h3>'+
         '<form id="tForm"><div class="formgrid">'+
           field('Opérateur','<select id="fCompte" required></select>')+
@@ -31,7 +31,7 @@ Elikya.registerModule({
         '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="saveBtn" style="width:auto">Enregistrer</button><button class="btn" type="button" id="cancelBtn">Annuler</button></div></form>'+
       '</div>'+
 
-      '<div class="card hidden" id="soldeCard" style="margin-bottom:16px">'+
+      '<div class="card hidden" id="soldeCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 12px" id="soldeTitle">Relevé de solde</h3>'+
         '<form id="sForm"><div class="formgrid">'+
           field('Nouveau solde relevé (USD)','<input id="sSolde" inputmode="decimal" required>')+
@@ -87,7 +87,7 @@ Elikya.registerModule({
       box.innerHTML = comptes.map(function(c){
         return '<div class="card kpi"><div class="lab" style="display:flex;justify-content:space-between;align-items:center">'+
           '<span>'+esc(OPS[c.operateur]||c.operateur)+'</span>'+
-          '<button class="btn" data-solde="'+c.id+'" style="padding:4px 10px;font-size:12px">Relevé</button></div>'+
+          '<button class="btn" data-ecriture data-solde="'+c.id+'" style="padding:4px 10px;font-size:12px">Relevé</button></div>'+
           '<div class="val tnum">'+usd(c.solde)+'</div>'+
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">'+(total?Math.round(Number(c.solde||0)/total*100):0)+' % du float total ('+usd(total)+')</div></div>';
       }).join('') || '<div class="card" style="color:var(--muted)">Aucun compte opérateur.</div>';
@@ -114,7 +114,7 @@ Elikya.registerModule({
         rows.innerHTML = data.map(function(t){
           var st = STATUTS[t.statut] || [t.statut,'neutral'];
           var op = t.momo_comptes && t.momo_comptes.operateur;
-          var statut = t.statut==='en_attente'
+          var statut = !Elikya.readOnly && t.statut==='en_attente'
             ? '<select data-statut="'+t.id+'" style="font:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel2);color:var(--ink)">'+
                 Object.keys(STATUTS).map(function(k){return '<option value="'+k+'"'+(k===t.statut?' selected':'')+'>'+STATUTS[k][0]+'</option>';}).join('')+'</select>'
             : h.pill(st[0], st[1]);

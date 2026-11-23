@@ -95,6 +95,7 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 - Statuts → pastilles via `Elikya.h.pill(label, kind)` (`ok|warn|crit|info|neutral`).
 - Couleurs et espacements : **uniquement** via les tokens de `styles.css` (clair + sombre).
 - **Suivi only** : ne pas introduire de logique de paiement/compensation d'argent.
+- **Site = lecture seule** (`Elikya.readOnly`) : tout bouton / formulaire de saisie d'un module du site porte `data-ecriture` (masqué).
 - **Données : toujours via `Elikya.data`** (select/insert/update), jamais `Elikya.db.from(...)` dans un module — sinon pas de mode hors ligne. Nouvelle table → l'ajouter dans `TABLES` de `web/js/data.js` et incrémenter `DB_VERSION`.
 
 ## Sécurité (important)

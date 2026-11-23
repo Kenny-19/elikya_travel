@@ -160,3 +160,6 @@ input[type=month]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid 
   .viz-table{display:block}.viz-table[open] summary,.viz-table summary{display:none}
 }
 td.cap{white-space:nowrap}
+
+/* site direction en lecture seule : boutons et formulaires de saisie masqués (cf. app.js) */
+body.lecture-seule [data-ecriture]{display:none!important}

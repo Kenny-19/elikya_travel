@@ -174,6 +174,12 @@
     if(prof.denied){ return denyAccess(prof.message); }
     Elikya.profile = prof.data;
 
+    // Site direction = CONSULTATION : aucune saisie (les agents saisissent dans l'app Flutter).
+    // Les contrôles marqués data-ecriture sont masqués (styles.css) et Elikya.data refuse
+    // toute écriture. Mettre à false pour réactiver la saisie sur le site.
+    Elikya.readOnly = true;
+    document.body.classList.toggle('lecture-seule', Elikya.readOnly);
+
     loginView.classList.add('hidden'); appView.classList.remove('hidden');
     document.getElementById('whoMail').textContent = (prof.data && prof.data.role) || user.email;
     document.getElementById('whoName').textContent = (prof.data && prof.data.nom) || (user.email||'').split('@')[0];

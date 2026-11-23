@@ -5,6 +5,8 @@ window.Elikya = (function(){
     money: function(n, code){
       return Number(n||0).toLocaleString('fr-FR') + ' ' + (code==='CDF' ? 'FC' : '$');
     },
+    // invitation à saisir (« Clique « Nouveau… » ») — vide sur le site en lecture seule
+    invite: function(txt){ return window.Elikya && Elikya.readOnly ? '' : ' '+txt; },
     // suffixe de message quand une saisie a été gardée en local (hors ligne)
     saved: function(res){ return res && res.offline ? ' · hors ligne, sera synchronisé' : ' ✓'; },
     num: function(n){ return Number(n||0).toLocaleString('fr-FR'); },
@@ -32,6 +34,7 @@ window.Elikya = (function(){
   return {
     db: null,          // client Supabase (défini par supabaseClient.js)
     user: null,        // utilisateur connecté
+    readOnly: false,   // true = site de consultation (direction) : aucune saisie (cf. app.js)
     modules: modules,
     registerModule: function(m){ modules.push(m); },
     getModule: function(id){ return modules.filter(function(x){return x.id===id;})[0]; },

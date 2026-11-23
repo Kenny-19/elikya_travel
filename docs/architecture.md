@@ -95,3 +95,11 @@ test/                      tests de la logique hors ligne + des rôles
   bleu / orange / vert d'eau, clair et sombre (`--series-1..3` dans `styles.css`), légende +
   info-bulle + tableau des valeurs pour chaque graphique.
 - Rapports : export CSV pour Excel (« ; », BOM UTF-8) et impression / PDF via le navigateur.
+
+## Site direction en lecture seule
+- Le site sert à **consulter** l'activité : `app.js` met `Elikya.readOnly = true`.
+- Les contrôles de saisie portent l'attribut `data-ecriture` → masqués par `styles.css`
+  (`body.lecture-seule [data-ecriture]`). Les statuts modifiables en liste deviennent des pastilles.
+- Filet de sécurité : `Elikya.data.insert/update` refusent toute écriture en lecture seule.
+- Les saisies se font dans l'app agents (Flutter). Pour réactiver la saisie sur le site : `readOnly = false`.
+- Nouveau module du site : marquer tout bouton / formulaire de saisie avec `data-ecriture`.

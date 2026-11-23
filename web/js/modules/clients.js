@@ -21,9 +21,9 @@ Elikya.registerModule({
     root.innerHTML =
       '<div class="phead"><div><div class="eyebrow">Référentiel</div><h1 class="pf">Clients</h1>'+
         '<p>Fiches clients et chiffre d’affaires cumulé (voyage + fourniture, hors annulés, en USD).</p></div>'+
-        '<button class="btn gold" id="newBtn" style="width:auto">＋ Nouveau client</button></div>'+
+        '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Nouveau client</button></div>'+
       '<div class="row k4" id="kpis" style="margin-bottom:16px"></div>'+
-      '<div class="card hidden" id="fCard" style="margin-bottom:16px"><h3 id="fTitle"></h3>'+
+      '<div class="card hidden" id="fCard" data-ecriture style="margin-bottom:16px"><h3 id="fTitle"></h3>'+
         '<form id="fForm"><div class="formgrid">'+
           field('Nom','<input id="fNom" required>')+
           field('Type','<select id="fType">'+Object.keys(TYPES).map(function(k){ return '<option value="'+k+'">'+TYPES[k]+'</option>'; }).join('')+'</select>')+
@@ -80,9 +80,9 @@ Elikya.registerModule({
         return '<tr><td><b>'+esc(c.nom)+'</b></td><td>'+(c.type === 'entreprise' ? h.pill('Entreprise','info') : h.pill('Particulier','neutral'))+'</td>'+
           '<td class="tnum">'+esc(c.telephone||'—')+'</td><td>'+esc(c.ville||'—')+'</td><td>'+(c.segment ? h.pill(esc(c.segment),'warn') : '—')+'</td>'+
           '<td class="num tnum">'+s.dossiers+'</td><td class="num tnum">'+s.commandes+'</td><td class="num tnum"><b>'+usd(s.ca)+'</b></td>'+
-          '<td><button class="lnk" data-edit="'+c.id+'">Modifier</button></td></tr>';
+          '<td><button class="lnk" data-ecriture data-edit="'+c.id+'">Modifier</button></td></tr>';
       }).join('') : '<tr><td colspan="9" style="padding:26px;text-align:center;color:var(--muted)">'+
-        (clients.length ? 'Aucun client ne correspond.' : 'Aucun client. Clique « Nouveau client ».')+'</td></tr>';
+        (clients.length ? 'Aucun client ne correspond.' : 'Aucun client.'+h.invite('Clique « Nouveau client ».')+'')+'</td></tr>';
     }
 
     function openForm(c){
