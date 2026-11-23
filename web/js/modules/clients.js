@@ -21,7 +21,7 @@ Elikya.registerModule({
     root.innerHTML =
       '<div class="phead"><div><div class="eyebrow">Référentiel</div><h1 class="pf">Clients</h1>'+
         '<p>Fiches clients et chiffre d’affaires cumulé (voyage + fourniture, hors annulés, en USD).</p></div>'+
-        '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Nouveau client</button></div>'+
+        '<button class="btn primary" id="newBtn" data-ecriture style="width:auto">＋ Nouveau client</button></div>'+
       '<div class="row k4" id="kpis" style="margin-bottom:16px"></div>'+
       '<div class="card hidden" id="fCard" data-ecriture style="margin-bottom:16px"><h3 id="fTitle"></h3>'+
         '<form id="fForm"><div class="formgrid">'+
@@ -31,7 +31,7 @@ Elikya.registerModule({
           field('Ville','<input id="fVille">')+
           field('E-mail','<input id="fEmail" type="email">')+
           field('Segment','<select id="fSeg">'+SEGMENTS.map(function(s){ return '<option value="'+s+'">'+(s || '—')+'</option>'; }).join('')+'</select>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="fSave" style="width:auto">Enregistrer</button>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="fSave" style="width:auto">Enregistrer</button>'+
         '<button class="btn" type="button" id="fCancel">Annuler</button></div></form></div>'+
       '<div class="toolbar">'+
         '<div class="field" style="margin:0;min-width:260px"><input id="q" placeholder="Rechercher (nom, téléphone, ville…)"></div>'+

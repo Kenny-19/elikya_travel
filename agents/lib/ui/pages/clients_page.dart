@@ -186,7 +186,7 @@ class _ClientsPageState extends State<ClientsPage> {
             ),
             Text(
               '${visibles.length} client${visibles.length > 1 ? 's' : ''}',
-              style: const TextStyle(color: Elk.gold, fontWeight: FontWeight.w700),
+              style: const TextStyle(color: Elk.accentText, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -218,7 +218,7 @@ class _ClientsPageState extends State<ClientsPage> {
                   DataCell(c['type'] == 'entreprise' ? const Pill('Entreprise', Elk.info) : Pill('Particulier', muted)),
                   DataCell(Text('${c['telephone'] ?? '—'}')),
                   DataCell(Text('${c['ville'] ?? '—'}')),
-                  DataCell((c['segment'] ?? '') == '' ? const Text('—') : Pill('${c['segment']}', Elk.gold)),
+                  DataCell((c['segment'] ?? '') == '' ? const Text('—') : Pill('${c['segment']}', Elk.accentText)),
                   DataCell(Text('${st(c).dossiers}')),
                   DataCell(Text('${st(c).commandes}')),
                   DataCell(Text(_usd(st(c).ca), style: const TextStyle(fontWeight: FontWeight.w600))),

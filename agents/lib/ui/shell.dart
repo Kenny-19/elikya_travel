@@ -86,52 +86,62 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 230,
+    width: 240,
     color: Elk.side,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Padding(
-          padding: EdgeInsets.fromLTRB(18, 20, 18, 14),
-          child: Text(
-            'Elikya  ·  Agents',
-            style: TextStyle(color: Elk.gold2, fontSize: 17, fontWeight: FontWeight.w700),
-          ),
+          padding: EdgeInsets.fromLTRB(18, 20, 14, 16),
+          child: ElikyaLogo(size: 36, onDark: true, subtitle: 'Agents'),
         ),
         const Padding(
           padding: EdgeInsets.fromLTRB(24, 10, 12, 6),
-          child: Text('ACTIVITÉS', style: TextStyle(color: Elk.sideMuted, fontSize: 10, letterSpacing: 2)),
+          child: Text(
+            'ACTIVITÉS',
+            style: TextStyle(color: Elk.sideMuted, fontSize: 10, letterSpacing: 1.4, fontWeight: FontWeight.w700),
+          ),
         ),
         for (var i = 0; i < modules.length; i++)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
             child: Material(
-              color: i == index ? Elk.gold2.withValues(alpha: .14) : Colors.transparent,
-              borderRadius: BorderRadius.circular(9),
-              child: ListTile(
-                dense: true,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                leading: Icon(modules[i].icon, size: 19, color: i == index ? Elk.gold2 : Elk.sideInk),
-                title: Text(
-                  modules[i].label,
-                  style: TextStyle(color: i == index ? Colors.white : Elk.sideInk, fontSize: 13.5),
+              color: i == index ? Elk.side2 : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                // repère orange de la page active (comme le site)
+                decoration: BoxDecoration(
+                  border: Border(left: BorderSide(color: i == index ? Elk.accent : Colors.transparent, width: 3)),
                 ),
-                onTap: () => onSelect(i),
+                child: ListTile(
+                  dense: true,
+                  leading: Icon(modules[i].icon, size: 19, color: i == index ? Elk.accent : Elk.sideMuted),
+                  title: Text(
+                    modules[i].label,
+                    style: TextStyle(
+                      color: i == index ? Colors.white : Elk.sideInk,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  onTap: () => onSelect(i),
+                ),
               ),
             ),
           ),
         const Spacer(),
-        const Divider(color: Color(0xFF2C2D30), height: 1),
+        const Divider(color: Color(0xFF1D3A66), height: 1),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: Elk.gold,
+                backgroundColor: Elk.accent,
                 child: Text(
                   profile.nom.isEmpty ? '?' : profile.nom.substring(0, 2).toUpperCase(),
-                  style: const TextStyle(color: Color(0xFF19150C), fontSize: 12, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: Elk.navy, fontSize: 12, fontWeight: FontWeight.w800),
                 ),
               ),
               const SizedBox(width: 10),

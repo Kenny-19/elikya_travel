@@ -12,7 +12,7 @@ Elikya.registerModule({
       '<div class="banner">Module Voyage · suivi des dossiers (billets, visa, hôtel, assurance, package).</div>'+
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Voyage</h1>'+
         '<p>Dossiers clients lus et enregistrés en temps réel dans la base.</p></div>'+
-        '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Nouveau dossier</button></div>'+
+        '<button class="btn primary" id="newBtn" data-ecriture style="width:auto">＋ Nouveau dossier</button></div>'+
       '<div class="row k4" style="margin-bottom:16px">'+
         kpi('kTotal','Dossiers')+kpi('kOk','Confirmés / payés')+kpi('kPend','En cours / devis')+kpi('kSum','Montant total')+
       '</div>'+
@@ -25,7 +25,7 @@ Elikya.registerModule({
           field('Montant','<input id="fMontant" inputmode="decimal" placeholder="0" required>')+
           field('Devise','<select id="fDevise" required></select>')+
           field('Statut','<select id="fStatut"><option value="devis">Devis</option><option value="confirme">Confirmé</option><option value="paye">Payé</option><option value="en_cours">En cours</option><option value="annule">Annulé</option></select>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="saveBtn" style="width:auto">Enregistrer</button><button class="btn" type="button" id="cancelBtn">Annuler</button></div></form>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="saveBtn" style="width:auto">Enregistrer</button><button class="btn" type="button" id="cancelBtn">Annuler</button></div></form>'+
       '</div>'+
       '<div class="toolbar"><span class="eyebrow" id="listCount">—</span><button class="btn" id="refreshBtn" style="margin-left:auto">↻ Rafraîchir</button></div>'+
       '<div class="card tight"><div class="table-wrap"><table>'+

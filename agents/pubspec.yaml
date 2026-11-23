@@ -68,6 +68,22 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Charte Elikya Group : logo officiel + police Plus Jakarta Sans
+  # (intégrée à l'app pour qu'elle s'affiche aussi hors ligne ; licence OFL dans assets/fonts/OFL.txt)
+  assets:
+    - assets/brand/mark-512.png
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

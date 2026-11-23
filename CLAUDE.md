@@ -13,7 +13,7 @@ agence de voyage + fourniture de biens + mobile money. Multi-modules, base parta
 - **App agents** (`agents/`) : **Flutter** Windows desktop, base locale **SQLite (drift)**.
 - **Données** : **Supabase** (PostgreSQL + Auth + RLS). Les deux applis parlent **directement** à Supabase.
 - **Pas de serveur** intermédiaire (ni FastAPI).
-- UI en **français**, thème **graphite + doré** (`web/assets/styles.css`, `agents/lib/ui/theme.dart`).
+- UI en **français**, **charte Elikya Group** (`Elikya-Group-Dossier/03_brief`) : marine `#0B1F3A` dominant, marine `#16325C`, orange `#F2882A` en accent seulement (boutons d'action, repère actif, petits libellés — ≤ 10 %), fond `#EEF2F7`, texte `#5B6B82`, police **Plus Jakarta Sans** (pas de serif), logo officiel (`web/assets/brand`, `agents/assets/brand`, ne pas recolorer ni déformer). Tokens : `web/assets/styles.css` et `agents/lib/ui/theme.dart` (mêmes valeurs). Bouton orange → texte marine (contraste).
 
 ## Architecture (détails dans `docs/architecture.md`)
 - **Propriétaire** → **site web JS** (`web/`), **réservé à la direction** : vue globale.

@@ -207,7 +207,7 @@ class _MomoPageState extends State<MomoPage> {
             ),
             Text(
               '${transactions.length} transaction${transactions.length > 1 ? 's' : ''}',
-              style: const TextStyle(color: Elk.gold, fontWeight: FontWeight.w700),
+              style: const TextStyle(color: Elk.accentText, fontWeight: FontWeight.w700),
             ),
             OutlinedButton.icon(
               onPressed: _loadAll,

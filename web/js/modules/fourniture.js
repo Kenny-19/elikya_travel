@@ -25,7 +25,7 @@ Elikya.registerModule({
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Fourniture</h1>'+
         '<p>Catalogue et commandes clients. Stock = inventaire relevé ; montants en USD.</p></div>'+
         '<div class="toolbar" style="margin:0"><div class="seg" id="seg"><button data-v="catalogue">Catalogue</button><button data-v="commandes">Commandes</button></div>'+
-        '<button class="btn" id="refreshBtn">↻</button><button class="btn gold" id="newBtn" data-ecriture style="width:auto"></button></div></div>'+
+        '<button class="btn" id="refreshBtn">↻</button><button class="btn primary" id="newBtn" data-ecriture style="width:auto"></button></div></div>'+
       '<div class="row k4" id="kpis" style="margin-bottom:16px"></div>'+
 
       // formulaire produit (création / modification-inventaire)
@@ -38,7 +38,7 @@ Elikya.registerModule({
           field('Stock relevé','<input id="pStock" inputmode="numeric" value="0" required>')+
           field('Seuil d’alerte','<input id="pSeuil" inputmode="numeric" value="5" required>')+
           field('Prix unitaire (USD)','<input id="pPrix" inputmode="decimal" required>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="pSave" style="width:auto">Enregistrer</button>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="pSave" style="width:auto">Enregistrer</button>'+
         '<button class="btn" type="button" data-cancel="pCard">Annuler</button></div></form></div>'+
 
       // formulaire commande
@@ -49,7 +49,7 @@ Elikya.registerModule({
         '</div><h3 style="margin:16px 0 8px;font-size:13px">Lignes</h3><div id="cLignes"></div>'+
         '<div class="toolbar" style="margin:8px 0 0"><button class="btn" type="button" id="addLigne">＋ Ajouter une ligne</button>'+
         '<b class="tnum" id="cTotal" style="margin-left:auto;font-size:16px"></b></div>'+
-        '<div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="cSave" style="width:auto">Enregistrer</button>'+
+        '<div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="cSave" style="width:auto">Enregistrer</button>'+
         '<button class="btn" type="button" data-cancel="cCard">Annuler</button></div></form></div>'+
 
       '<div class="card tight"><div class="table-wrap"><table><thead id="thead"></thead><tbody id="rows">'+h.loadingRow(9)+'</tbody></table></div></div>';

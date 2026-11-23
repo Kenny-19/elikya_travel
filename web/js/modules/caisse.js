@@ -15,7 +15,7 @@ Elikya.registerModule({
         '<p>Une session par jour et par agent. Les totaux sont exprimés en USD (CDF converti au taux de la table devises).</p></div>'+
         '<div class="toolbar" style="margin:0">'+
           '<button class="btn" id="openBtn" data-ecriture>＋ Ouvrir une session</button>'+
-          '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Mouvement</button>'+
+          '<button class="btn primary" id="newBtn" data-ecriture style="width:auto">＋ Mouvement</button>'+
         '</div></div>'+
 
       // sélection de session
@@ -37,7 +37,7 @@ Elikya.registerModule({
         '<form id="oForm"><div class="formgrid">'+
           field('Jour','<input type="date" id="oJour" required>')+
           field('Solde d’ouverture (USD)','<input id="oSolde" inputmode="decimal" placeholder="0" required>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="oSave" style="width:auto">Ouvrir</button><button class="btn" type="button" data-cancel="openCard">Annuler</button></div></form>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="oSave" style="width:auto">Ouvrir</button><button class="btn" type="button" data-cancel="openCard">Annuler</button></div></form>'+
       '</div>'+
 
       // formulaire : mouvement
@@ -50,7 +50,7 @@ Elikya.registerModule({
           field('Nature','<select id="fSrc">'+Object.keys(SOURCES).map(function(k){return '<option value="'+k+'">'+SOURCES[k]+'</option>';}).join('')+'</select>')+
           field('Montant','<input id="fMontant" inputmode="decimal" placeholder="0" required>')+
           field('Devise','<select id="fDevise" required></select>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="mSave" style="width:auto">Enregistrer</button><button class="btn" type="button" data-cancel="formCard">Annuler</button></div></form>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="mSave" style="width:auto">Enregistrer</button><button class="btn" type="button" data-cancel="formCard">Annuler</button></div></form>'+
       '</div>'+
 
       // formulaire : clôture
@@ -60,7 +60,7 @@ Elikya.registerModule({
         '<form id="cForm"><div class="formgrid">'+
           field('Solde compté (USD)','<input id="cSolde" inputmode="decimal" required>')+
           field('Solde théorique (USD)','<input id="cTheo" disabled>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="cSave" style="width:auto">Clôturer</button><button class="btn" type="button" data-cancel="closeCard">Annuler</button></div></form>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="cSave" style="width:auto">Clôturer</button><button class="btn" type="button" data-cancel="closeCard">Annuler</button></div></form>'+
       '</div>'+
 
       '<div class="toolbar"><span class="eyebrow" id="listCount">—</span></div>'+

@@ -22,7 +22,8 @@ db/roles.sql            Rôles : RLS par permission (après schema.sql)
 agents/                 App bureau des AGENTS (Flutter Windows, SQLite en secours, cf. agents/README.md)
 web/                    Site PROPRIÉTAIRE (JS, réservé à la direction)
   index.html            Shell : login + sidebar + zone module
-  assets/styles.css     Design system (thème graphite & doré, clair/sombre)
+  assets/styles.css     Design system (charte Elikya : marine + orange, Plus Jakarta Sans, clair/sombre)
+  assets/brand/         Logos officiels Elikya Group (SVG)
   js/core.js            Registre de modules + helpers
   js/supabaseClient.js  Init client Supabase
   js/app.js             Boot : auth, sidebar, routage

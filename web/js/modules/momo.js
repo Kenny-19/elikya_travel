@@ -15,7 +15,7 @@ Elikya.registerModule({
       '<div class="banner">Module Mobile Money · soldes relevés par opérateur et journal des transactions (dépôt, retrait, transfert).</div>'+
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Mobile Money</h1>'+
         '<p>Montants en USD. Les soldes sont des relevés saisis à la main, ils ne sont pas recalculés.</p></div>'+
-        '<button class="btn gold" id="newBtn" data-ecriture style="width:auto">＋ Nouvelle transaction</button></div>'+
+        '<button class="btn primary" id="newBtn" data-ecriture style="width:auto">＋ Nouvelle transaction</button></div>'+
 
       '<div class="row k3" id="comptes" style="margin-bottom:16px"></div>'+
 
@@ -28,14 +28,14 @@ Elikya.registerModule({
           field('Frais / commission (USD)','<input id="fFrais" inputmode="decimal" placeholder="0">')+
           field('Téléphone client','<input id="fTel" inputmode="tel" placeholder="+243…">')+
           field('Statut','<select id="fStatut">'+Object.keys(STATUTS).map(function(k){return '<option value="'+k+'">'+STATUTS[k][0]+'</option>';}).join('')+'</select>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="saveBtn" style="width:auto">Enregistrer</button><button class="btn" type="button" id="cancelBtn">Annuler</button></div></form>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="saveBtn" style="width:auto">Enregistrer</button><button class="btn" type="button" id="cancelBtn">Annuler</button></div></form>'+
       '</div>'+
 
       '<div class="card hidden" id="soldeCard" data-ecriture style="margin-bottom:16px">'+
         '<h3 style="margin:0 0 12px" id="soldeTitle">Relevé de solde</h3>'+
         '<form id="sForm"><div class="formgrid">'+
           field('Nouveau solde relevé (USD)','<input id="sSolde" inputmode="decimal" required>')+
-        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn gold" type="submit" id="sSave" style="width:auto">Mettre à jour</button><button class="btn" type="button" id="sCancel">Annuler</button></div></form>'+
+        '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="sSave" style="width:auto">Mettre à jour</button><button class="btn" type="button" id="sCancel">Annuler</button></div></form>'+
       '</div>'+
 
       '<div class="row k4" style="margin-bottom:16px">'+

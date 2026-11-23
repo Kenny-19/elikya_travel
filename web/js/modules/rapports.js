@@ -30,7 +30,7 @@ Elikya.registerModule({
         '<div class="toolbar no-print" style="margin:0">'+
           '<input type="month" id="mois" value="'+mois+'" max="'+mois+'" aria-label="Mois du rapport">'+
           '<button class="btn" id="csvBtn">⤓ Exporter (Excel)</button>'+
-          '<button class="btn gold" id="printBtn" style="width:auto">Imprimer / PDF</button>'+
+          '<button class="btn primary" id="printBtn" style="width:auto">Imprimer / PDF</button>'+
         '</div></div>'+
       '<div class="row k4" id="tiles" style="margin-bottom:16px"></div>'+
       '<div class="card" style="margin-bottom:16px"><h3>Activité par jour</h3><div id="chart"><span class="spin"></span></div></div>'+

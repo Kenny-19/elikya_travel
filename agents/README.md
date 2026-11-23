@@ -34,5 +34,6 @@ La base SQLite de secours (copie hors ligne + **saisies en attente**) est dans
   elle serait lisible dans l'exe — `build-installer.js` la refuse).
 - `flutter run -d windows` · `flutter test` · `flutter analyze`.
 - Après modification de `lib/data/local_db.dart` : `dart run build_runner build`.
-- Icône : `node scripts/make-icon.js` (monogramme « E » doré, régénère `app_icon.ico`).
+- Icône : `node scripts/make-icon.js` assemble `app_icon.ico` à partir du **logo officiel** (`assets/brand/mark-*.png`).
+- Police **Plus Jakarta Sans** intégrée (`assets/fonts`, licence OFL) : l'app garde la charte même hors ligne.
 - Les écrans passent **toujours** par `DataService` (`lib/data/data_service.dart`).

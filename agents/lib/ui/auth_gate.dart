@@ -180,45 +180,36 @@ class _LoginPageState extends State<LoginPage> {
 class _Brand extends StatelessWidget {
   const _Brand();
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: 46,
-        height: 46,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(color: Elk.gold2, width: 1.5),
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: const Text(
-          'E',
-          style: TextStyle(color: Elk.gold2, fontSize: 24, fontWeight: FontWeight.w800),
-        ),
-      ),
-      const SizedBox(width: 12),
-      const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Elikya', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
-          Text('AGENTS', style: TextStyle(fontSize: 10.5, letterSpacing: 2.4)),
-        ],
-      ),
-    ],
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: ElikyaLogo(size: 46, onDark: Theme.of(context).brightness == Brightness.dark, subtitle: 'Espace agents'),
   );
 }
 
+/// Écrans de connexion / refus : carte blanche sur fond marine (comme le site direction).
 class _Centered extends StatelessWidget {
   const _Centered({required this.children});
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: Center(
-      child: SizedBox(
-        width: 380,
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(26, 30, 26, 26),
-            child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    body: DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [Elk.navy2, Elk.navy, Color(0xFF071831)],
+        ),
+      ),
+      child: Center(
+        child: SizedBox(
+          width: 400,
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(28, 32, 28, 28),
+              child: Column(mainAxisSize: MainAxisSize.min, children: children),
+            ),
           ),
         ),
       ),

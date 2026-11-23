@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
-/// En-tête de module : surtitre doré, titre, sous-titre et actions à droite.
+/// En-tête de module : surtitre orange (capitales espacées), titre ExtraBold, sous-titre, actions.
 class PageHeader extends StatelessWidget {
   const PageHeader({super.key, required this.title, required this.subtitle, this.actions = const []});
   final String title, subtitle;
@@ -20,12 +20,17 @@ class PageHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'MODULE · SUIVI',
-            style: TextStyle(color: Elk.gold, fontSize: 11, letterSpacing: 2.2, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFFF6A25A) : Elk.accentText,
+              fontSize: 11,
+              letterSpacing: 1.1,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 6),
-          Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
+          Text(title, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -.5)),
           Text(subtitle, style: TextStyle(color: Theme.of(context).hintColor)),
         ],
       ),
@@ -40,7 +45,7 @@ class Kpi extends StatelessWidget {
   final Widget? footer;
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: 240,
+    width: 228, // 4 tuiles sur une ligne dès 1280 px de large
     child: Card(
       child: Padding(
         padding: const EdgeInsets.all(17),
@@ -49,10 +54,10 @@ class Kpi extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(color: Theme.of(context).hintColor, fontWeight: FontWeight.w600, fontSize: 12),
+              style: TextStyle(color: Theme.of(context).hintColor, fontWeight: FontWeight.w700, fontSize: 12),
             ),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
+            Text(value, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -.4)),
             if (footer != null) ...[const SizedBox(height: 6), footer!],
           ],
         ),
