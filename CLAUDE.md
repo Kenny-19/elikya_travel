@@ -35,6 +35,9 @@ App agents (agents/, Flutter) ─────┘   ▲
 ```
 db/roles.sql            # rôles : RLS par permission + mon_profil (à lancer après schema.sql)
 scripts/build-site.js   # prépare dist/site pour l'hébergeur (vérifie la clé anon, CSP) — cf. docs/mise-en-ligne.md
+scripts/build-installer.js # installeur Windows de l'app agents (NSIS) → dist/Elikya-Agents-Setup-<version>.exe
+scripts/make-icon.js    # génère l'icône de l'app agents (monogramme « E »)
+agents/installer/       # script NSIS de l'installeur
 agents/                 # app agents Flutter (voir agents/README.md)
 db/schema.sql           # 15 tables + contraintes + index + RLS + jeu de test
 web/index.html          # shell de l'app (login + sidebar + zone module)
@@ -100,7 +103,7 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 - `.gitignore` exclut déjà `web/config.js` et `.env`.
 
 ## Roadmap
-Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse, Mobile Money, Fourniture, Clients) ✅. Site direction complet (tableau de bord, rapports, tous les modules) ✅. Site en ligne : https://elikya0travel.netlify.app — dépôt GitHub `Kenny-19/elikya_travel` (branche main), Netlify reconstruit via `netlify.toml` (variables SUPABASE_URL / SUPABASE_KEY). Prochain lot : **installeur Windows** de l'app agents.
+Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse, Mobile Money, Fourniture, Clients) ✅. Site direction complet (tableau de bord, rapports, tous les modules) ✅. Site en ligne : https://elikya0travel.netlify.app — dépôt GitHub `Kenny-19/elikya_travel` (branche main), Netlify reconstruit via `netlify.toml` (variables SUPABASE_URL / SUPABASE_KEY). Installeur agents ✅ (`node scripts/build-installer.js` → `dist/Elikya-Agents-Setup-<version>.exe`, voir `agents/README.md`). ⚠ Ne pas changer CompanyName / ProductName dans `agents/windows/runner/Runner.rc` : ils fixent le dossier des données locales (`%APPDATA%\Elikya Group\Elikya Agents`).
 
 
 

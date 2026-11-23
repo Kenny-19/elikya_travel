@@ -17,7 +17,7 @@ base en ligne Supabase prioritaire, base locale en secours. Détails dans `archi
 | 10 | Site : **tableau de bord** (période, variations, activité par jour, alertes, float, top clients) + **rapports** mensuels (journalier, par agent, top clients, export Excel, impression PDF) | ✅ fait |
 | 10b | Site : **Fourniture** (catalogue, réservé/disponible, commandes) et **Clients** (fiches, CA cumulé) | ✅ fait |
 | 11 | Mise en ligne du **site** : https://elikya0travel.netlify.app (en-têtes de sécurité vérifiés) ; code sur GitHub `Kenny-19/elikya_travel` ; mises à jour auto via `netlify.toml` | ✅ en ligne, mises à jour auto vérifiées |
-| 12 | Installeur Windows de l'app agents (MSIX ou Inno Setup) | ⬜ |
+| 12 | **Installeur Windows** de l'app agents (NSIS, sans droits admin, runtime VC++ inclus, données conservées) : `node scripts/build-installer.js` | ✅ fait |
 
 ## Pour ajouter un module à l'app agents
 Créer `agents/lib/ui/pages/<module>_page.dart` sur le modèle de `voyage_page.dart`, l'ajouter dans

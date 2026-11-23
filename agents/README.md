@@ -4,15 +4,35 @@ Application bureau des agents. Base **en ligne Supabase prioritaire**, **SQLite 
 quand Supabase est injoignable (saisies mises en file, envoyées au retour du réseau).
 Architecture complète : `../docs/architecture.md`.
 
-## Lancer
-1. Supabase : `db/schema.sql` puis **`db/roles.sql`** (SQL Editor → Run).
-2. Créer le compte de l'agent (Authentication → Users) avec le **même e-mail** que sa fiche `users`,
-   puis relancer `db/roles.sql` (il relie les comptes par e-mail).
-3. `cp lib/config.example.dart lib/config.dart` et coller la clé anon.
-4. `flutter run -d windows` (dev) ou `flutter build windows --release`
-   → `build/windows/x64/runner/Release/elikya_agents.exe` (dossier complet à copier sur le poste).
+## Installer sur le poste d'un agent
+1. Fabriquer l'installeur (sur le poste de développement) :
+   ```
+   node scripts/build-installer.js
+   ```
+   → `dist/Elikya-Agents-Setup-<version>.exe` (~10 Mo, runtime Visual C++ inclus).
+2. Copier ce fichier sur le poste de l'agent (clé USB, partage…) et **double-cliquer**.
+   - Pas besoin des droits administrateur (installation pour l'utilisateur Windows courant,
+     dans `%LOCALAPPDATA%\Programs\Elikya Agents`).
+   - Raccourcis : bureau + menu Démarrer. Désinstallation : Paramètres → Applications.
+   - Windows SmartScreen peut afficher « Windows a protégé votre ordinateur » (installeur non signé) :
+     **Informations complémentaires → Exécuter quand même**.
+3. Première connexion **avec internet** (compte créé par la direction, même e-mail que la fiche `users`).
+
+### Mettre à jour
+Augmenter `version:` dans `pubspec.yaml` (ex. `1.0.1+2`), relancer `node scripts/build-installer.js`,
+et installer le nouveau fichier par-dessus (l'app doit être fermée ; l'installeur le demande).
+
+### Données locales — à ne pas perdre
+La base SQLite de secours (copie hors ligne + **saisies en attente**) est dans
+`%APPDATA%\Elikya Group\Elikya Agents`. La désinstallation la **conserve**.
+⚠ Ce chemin vient de `CompanyName` / `ProductName` de `windows/runner/Runner.rc` :
+**ne pas les modifier**, sinon l'app repartirait d'une base locale vide (saisies en attente perdues).
 
 ## Développer
-- `flutter test` : logique hors ligne (faux Supabase en mémoire) + menus par rôle.
+- Supabase : `db/schema.sql` puis `db/roles.sql`.
+- `cp lib/config.example.dart lib/config.dart` et coller la clé **publishable** (jamais la secrète :
+  elle serait lisible dans l'exe — `build-installer.js` la refuse).
+- `flutter run -d windows` · `flutter test` · `flutter analyze`.
 - Après modification de `lib/data/local_db.dart` : `dart run build_runner build`.
-- Les écrans passent **toujours** par `DataService` (`lib/data/data_service.dart`), jamais par Supabase directement.
+- Icône : `node scripts/make-icon.js` (monogramme « E » doré, régénère `app_icon.ico`).
+- Les écrans passent **toujours** par `DataService` (`lib/data/data_service.dart`).
