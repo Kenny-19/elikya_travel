@@ -16,6 +16,7 @@ base en ligne Supabase prioritaire, base locale en secours. Détails dans `archi
 | 9 | App agents : **Fourniture** (catalogue, réservé/disponible, commandes) et **Clients** (fiche, CA cumulé) | ✅ fait |
 | 10 | Site : **tableau de bord** (période, variations, activité par jour, alertes, float, top clients) + **rapports** mensuels (journalier, par agent, top clients, export Excel, impression PDF) | ✅ fait |
 | 10c | Site direction en **lecture seule** (consultation ; saisie dans l'app agents) | ✅ fait |
+| 10d | **Super admin** : entrée cachée du site (comptes agents, rôles, saisie) — `db/superadmin.sql` + Edge Function `admin-comptes` | ✅ codé — à installer (docs/super-admin.md) |
 | 10b | Site : **Fourniture** (catalogue, réservé/disponible, commandes) et **Clients** (fiches, CA cumulé) | ✅ fait |
 | 11 | Mise en ligne du **site** : https://elikya0travel.netlify.app (en-têtes de sécurité vérifiés) ; code sur GitHub `Kenny-19/elikya_travel` ; mises à jour auto via `netlify.toml` | ✅ en ligne, mises à jour auto vérifiées |
 | 12 | **Installeur Windows** de l'app agents (NSIS, sans droits admin, runtime VC++ inclus, données conservées) : `node scripts/build-installer.js` | ✅ fait |

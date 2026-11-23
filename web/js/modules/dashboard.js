@@ -83,6 +83,7 @@ Elikya.registerModule({
       var utiles = sessions.filter(function(s){ return s.statut === 'ouverte' || s.jour >= il30j; });
       var oldest = utiles.reduce(function(a, s){ return s.jour < a ? s.jour : a; }, S.dayKey(new Date()));
       var mv = await store.select('mouvements_caisse', { gte:{ cree_le: new Date(oldest+'T00:00:00').toISOString() } });
+      if(!$('#tiles')) return;   // on a changé d'écran pendant le chargement
       var mouvements = mv.data||[];
 
       var src = { devises:devises, dossiers:r[1].data||[], commandes:r[2].data||[], momo_transactions:r[3].data||[] };

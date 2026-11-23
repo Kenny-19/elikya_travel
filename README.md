@@ -40,6 +40,7 @@ docs/                   architecture.md, roadmap.md
 - ✅ Rôles (db/roles.sql) · site réservé à la direction
 - ✅ App agents Flutter : connexion, menu par rôle, hors ligne SQLite, Voyage, Caisse, Mobile Money, Fourniture, Clients
 - ✅ Site : tableau de bord + rapports mensuels (export Excel, impression PDF)
+- ✅ Super admin : entrée cachée du site pour créer les comptes agents et gérer les rôles (`docs/super-admin.md`)
 - ✅ Site en ligne : https://elikya0travel.netlify.app (mises à jour : `git push`, voir `docs/mise-en-ligne.md`) 
 - ✅ Installeur Windows de l'app agents : `node scripts/build-installer.js` (voir `agents/README.md`)
 

@@ -64,6 +64,7 @@ Elikya.registerModule({
         store.select('users', {}),
         store.select('clients', {})
       ]);
+      if(!$('#jours')) return;   // on a changé d'écran pendant le chargement
       var err = r.filter(function(x){ return x.error; })[0];
       if(err) h.toast('Attention : '+err.error.message);
 

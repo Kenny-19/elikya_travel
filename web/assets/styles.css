@@ -174,3 +174,6 @@ td.cap{white-space:nowrap}
 
 /* site direction en lecture seule : boutons et formulaires de saisie masqués (cf. app.js) */
 body.lecture-seule [data-ecriture]{display:none!important}
+
+/* super admin : badge discret dans le pied de la barre latérale (entrée cachée : Ctrl+Maj+A) */
+.side-foot .who .sa-badge{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:1px 6px;width:auto}

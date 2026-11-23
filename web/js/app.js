@@ -38,7 +38,8 @@
     var nav = document.getElementById('nav');
     var html = '';
     GROUPS.forEach(function(g){
-      var items = Elikya.modules.filter(function(m){ return (m.group||'Activités')===g; });
+      // les modules « cachés » (ex. admin) n'apparaissent jamais dans le menu
+      var items = Elikya.modules.filter(function(m){ return (m.group||'Activités')===g && !m.hidden; });
       if(!items.length) return;
       html += '<div class="grp">'+g+'</div>';
       items.forEach(function(m){
@@ -53,7 +54,8 @@
   }
 
   function route(id){
-    var m = Elikya.getModule(id) || Elikya.modules[0];
+    var m = Elikya.getModule(id);
+    if(!m || (m.superAdmin && !Elikya.superAdmin)) m = Elikya.modules[0];   // #admin sans droit → accueil
     if(!m) return;
     current = m.id;
     document.querySelectorAll('#nav a').forEach(function(a){ a.classList.toggle('on', a.dataset.mod===m.id); });
@@ -63,6 +65,24 @@
     Promise.resolve(m.render(root)).catch(function(err){
       root.innerHTML = '<div class="card"><p style="color:var(--crit)">Erreur module : '+err.message+'</p></div>';
     });
+  }
+
+  // ----- Entrée cachée du super admin -----
+  // Ctrl+Maj+A, ou 5 clics rapides sur le logo de la barre latérale, ou l'adresse …/#admin.
+  // (Uniquement pour un compte super admin ; pour les autres, rien ne se passe.)
+  function installSecretEntry(){
+    if(installSecretEntry.done) return;
+    installSecretEntry.done = true;
+    document.addEventListener('keydown', function(e){
+      if(e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')){ e.preventDefault(); route('admin'); }
+    });
+    var clics = 0, t = null, logo = document.querySelector('.side .brand');
+    if(logo) logo.addEventListener('click', function(){
+      clics++; clearTimeout(t); t = setTimeout(function(){ clics = 0; }, 1500);
+      if(clics >= 5){ clics = 0; route('admin'); }
+    });
+    var foot = document.getElementById('whoMail');
+    if(foot) foot.insertAdjacentHTML('afterend', '<span class="sa-badge" title="Entrée administration : Ctrl+Maj+A">Super admin</span>');
   }
 
   // ----- Bandeau réseau (en ligne prioritaire / local en secours) -----
@@ -174,17 +194,24 @@
     if(prof.denied){ return denyAccess(prof.message); }
     Elikya.profile = prof.data;
 
+    // Super administrateur (db/superadmin.sql : rôle avec permissions.admin) : entrée cachée
+    // #admin (comptes, rôles) et saisie réactivée. La vraie protection est côté base (RLS)
+    // et côté fonction serveur admin-comptes, pas dans le fait que l'entrée soit cachée.
+    Elikya.superAdmin = !!(prof.data && prof.data.permissions && prof.data.permissions.admin === true);
+
     // Site direction = CONSULTATION : aucune saisie (les agents saisissent dans l'app Flutter).
     // Les contrôles marqués data-ecriture sont masqués (styles.css) et Elikya.data refuse
-    // toute écriture. Mettre à false pour réactiver la saisie sur le site.
-    Elikya.readOnly = true;
+    // toute écriture. Seul le super admin garde la saisie.
+    Elikya.readOnly = !Elikya.superAdmin;
     document.body.classList.toggle('lecture-seule', Elikya.readOnly);
+    document.body.classList.toggle('super-admin', Elikya.superAdmin);
 
     loginView.classList.add('hidden'); appView.classList.remove('hidden');
     document.getElementById('whoMail').textContent = (prof.data && prof.data.role) || user.email;
     document.getElementById('whoName').textContent = (prof.data && prof.data.nom) || (user.email||'').split('@')[0];
     document.getElementById('avatar').textContent = ((prof.data && prof.data.nom) || user.email || '?').slice(0,2).toUpperCase();
     buildSidebar();
+    if(Elikya.superAdmin) installSecretEntry();
     var start = (location.hash.slice(1)) || (Elikya.modules[0] && Elikya.modules[0].id);
     route(start);
     // envoie ce qui attend sur le poste, puis rafraîchit la copie locale en arrière-plan

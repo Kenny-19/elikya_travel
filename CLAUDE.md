@@ -34,9 +34,11 @@ App agents (agents/, Flutter) ─────┘   ▲
 ## Structure du dépôt
 ```
 db/roles.sql            # rôles : RLS par permission + mon_profil (à lancer après schema.sql)
+db/superadmin.sql       # super admin : rôle + RLS users/roles réservée (cf. docs/super-admin.md)
+supabase/functions/admin-comptes/ # Edge Function : création / gestion des comptes (super admin seul)
 scripts/build-site.js   # prépare dist/site pour l'hébergeur (vérifie la clé anon, CSP) — cf. docs/mise-en-ligne.md
 scripts/build-installer.js # installeur Windows de l'app agents (NSIS) → dist/Elikya-Agents-Setup-<version>.exe
-scripts/make-icon.js    # génère l'icône de l'app agents (monogramme « E »)
+scripts/make-icon.js    # assemble l'icône de l'app agents depuis le logo officiel (agents/assets/brand)
 agents/installer/       # script NSIS de l'installeur
 agents/                 # app agents Flutter (voir agents/README.md)
 db/schema.sql           # 15 tables + contraintes + index + RLS + jeu de test
@@ -96,6 +98,10 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 - Couleurs et espacements : **uniquement** via les tokens de `styles.css` (clair + sombre).
 - **Suivi only** : ne pas introduire de logique de paiement/compensation d'argent.
 - **Site = lecture seule** (`Elikya.readOnly`) : tout bouton / formulaire de saisie d'un module du site porte `data-ecriture` (masqué).
+- **Super admin** (`Elikya.superAdmin`, permission `admin`, un seul compte) : entrée cachée `#admin`
+  (Ctrl+Maj+A ; module `admin.js` avec `hidden:true` + `superAdmin:true`), saisie réactivée.
+  Comptes créés via l'Edge Function `admin-comptes` — **jamais** la clé service_role dans le site.
+  La protection réelle = RLS (`db/superadmin.sql`) + contrôle dans la fonction. Voir `docs/super-admin.md`.
 - **Données : toujours via `Elikya.data`** (select/insert/update), jamais `Elikya.db.from(...)` dans un module — sinon pas de mode hors ligne. Nouvelle table → l'ajouter dans `TABLES` de `web/js/data.js` et incrémenter `DB_VERSION`.
 
 ## Sécurité (important)
