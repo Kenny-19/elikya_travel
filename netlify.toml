@@ -1,0 +1,12 @@
+# Netlify — site DIRECTION (web/), mis à jour à chaque envoi sur GitHub.
+# Variables à définir dans Netlify (Site configuration → Environment variables) :
+#   SUPABASE_URL  = https://<projet>.supabase.co
+#   SUPABASE_KEY  = clé publishable / anon (JAMAIS la clé secrète / service_role)
+[build]
+  command = "node scripts/build-site.js"
+  publish = "dist/site"
+  # Ne reconstruit que si le site a changé (un envoi qui ne touche que agents/ ou docs/ est ignoré)
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts netlify.toml"
+
+[build.environment]
+  NODE_VERSION = "20"

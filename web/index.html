@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elikya Gestion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div class="login" id="loginView">
+  <form class="box" id="loginForm">
+    <div class="brandbig"><div class="mono">E</div><div><b>Elikya</b><span>Gestion</span></div></div>
+    <div class="field"><label>E-mail</label><input type="email" id="email" autocomplete="username" required placeholder="vous@elikyagroup.cd"></div>
+    <div class="field"><label>Mot de passe</label><input type="password" id="password" autocomplete="current-password" required placeholder="••••••••"></div>
+    <button class="btn gold" type="submit" id="loginBtn" style="width:100%">Se connecter</button>
+    <div class="msg" id="loginMsg"></div>
+  </form>
+</div>
+
+<!-- ===== APP ===== -->
+<div class="app hidden" id="appView">
+  <aside class="side">
+    <div class="brand"><div class="mono">E</div><div><b>Elikya</b><span>Gestion</span></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="av" id="avatar">?</div>
+      <div class="who"><span id="whoName">—</span><span id="whoMail" style="color:var(--side-muted)">—</span></div>
+      <button class="lo" id="logout">Quitter</button>
+    </div>
+  </aside>
+  <div class="main"><div class="netbar hidden" id="netBar"></div><div class="content"><div class="wrap">
+    <div id="moduleRoot"></div>
+  </div></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Supabase client (UMD → window.supabase) : copie LOCALE d abord (indispensable hors ligne), CDN en secours -->
+<script src="vendor/supabase.js"></script>
+<script>window.supabase || document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>');</script>
+<!-- Config (copie de config.example.js) -->
+<script src="config.js"></script>
+<!-- Coeur -->
+<script src="js/core.js"></script>
+<script src="js/supabaseClient.js"></script>
+<script src="js/data.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/charts.js"></script>
+<!-- Modules (tableau de bord en premier = page d'accueil de la direction) -->
+<script src="js/modules/dashboard.js"></script>
+<script src="js/modules/voyage.js"></script>
+<script src="js/modules/caisse.js"></script>
+<script src="js/modules/momo.js"></script>
+<script src="js/modules/fourniture.js"></script>
+<script src="js/modules/clients.js"></script>
+<script src="js/modules/rapports.js"></script>
+<!-- App (boot) -->
+<script src="js/app.js"></script>
+</body>
+</html>

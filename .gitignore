@@ -1,0 +1,17 @@
+# secrets / config locale
+web/config.js
+.env
+.env.*
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+
+# build Tauri (plus tard)
+src-tauri/target/
+dist/
+
+# site préparé pour l'hébergeur (node scripts/build-site.js)
+dist/
