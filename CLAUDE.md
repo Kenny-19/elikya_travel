@@ -119,7 +119,12 @@ Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse
 
 ## App agents Flutter (`agents/`)
 - Écrans dans `agents/lib/ui/pages/`, déclarés dans `agents/lib/ui/modules.dart` avec leur permission
-  (`voyage`, `caisse`, `momo`, `fourniture`, `clients`). `voyage_page.dart` / `caisse_page.dart` = modèles.
+  (`voyage`, `caisse`, `momo`, `fourniture`, `clients`). `voyage_page.dart` / `caisse_page.dart` / `momo_page.dart` = modèles.
+- **Interface très simple** (agents peu à l’aise avec l’ordinateur) : l’app s’ouvre sur `accueil_page.dart`
+  (gros boutons + « À faire aujourd’hui »). Un bouton d’accueil ouvre un module avec une action via
+  `Navigation.aller(module, action)` ; la page la consomme après chargement avec `Navigation.prendreAction(module)`.
+  Règles : mots simples, un gros bouton d’action, choix en pastilles plutôt que listes, pas de hauteur fixe
+  qui coupe le texte (zoom Windows), statut toujours écrit.
 - Briques communes dans `agents/lib/ui/widgets.dart` (PageHeader, Kpi, TableCard, AmountField, dropdown, toast).
 - **Données : toujours via `DataService`** (`agents/lib/data/data_service.dart`), jamais Supabase directement.
   Messages de saisie : `savedSuffix(res.offline)` ajoute « hors ligne, sera synchronisé ».

@@ -8,6 +8,7 @@ import '../../data/data_service.dart';
 import '../../data/local_db.dart';
 import '../../data/remote.dart';
 import '../../profile.dart';
+import '../navigation.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -77,6 +78,10 @@ class _FourniturePageState extends State<FourniturePage> {
       error = r.map((x) => x.error).whereType<String>().firstOrNull;
       loading = false;
     });
+    if (Navigation.prendreAction('fourniture') == 'nouvelle_commande' && clients.isNotEmpty && produits.isNotEmpty) {
+      setState(() => vue = 'commandes');
+      _newCommande();
+    } // bouton de l'accueil
   }
 
   Future<void> _editProduit([JsonRow? p]) async {

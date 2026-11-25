@@ -13,6 +13,7 @@ import '../../data/location_logic.dart' show jourCle;
 import '../../data/remote.dart';
 import '../../data/voyage_logic.dart';
 import '../../profile.dart';
+import '../navigation.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -99,6 +100,10 @@ class _VoyagePageState extends State<VoyagePage> {
       error = r.map((x) => x.error).whereType<String>().firstOrNull;
       loading = false;
     });
+    // bouton de l'accueil
+    final action = Navigation.prendreAction('voyage');
+    if (action == 'nouveau') _dossier();
+    if (action == 'non_soldes') setState(() => filtre = 'non_soldes');
   }
 
   EtatPaiement _paiement(JsonRow d) => etatPaiement(d, paiementsDe(paiements, d['id']), devises);

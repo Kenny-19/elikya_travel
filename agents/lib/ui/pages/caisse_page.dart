@@ -1,24 +1,56 @@
-// Module Caisse — équivalent de web/js/modules/caisse.js.
-// Sessions journalières (une par jour et par agent), mouvements entrées/sorties, solde théorique,
-// clôture avec écart. Suivi uniquement : on JOURNALISE, aucun traitement d'argent.
-// Totaux en USD : les montants CDF sont convertis au taux de la table devises.
+// Module Caisse — en langage de tous les jours, pour quelqu'un qui n'est pas à l'aise avec l'ordinateur :
+//   le matin  : « Ouvrir ma caisse » (on compte l'argent du départ) ;
+//   la journée : un grand chiffre « En caisse maintenant » + deux gros boutons
+//                « Argent reçu » / « Argent sorti » avec des choix tout faits ;
+//   le soir   : « Fermer ma caisse » (on compte ; l'écran dit tout de suite s'il manque de l'argent).
+// Suivi uniquement : on NOTE les mouvements, aucun traitement d'argent. Totaux en USD
+// (CDF converti au taux de la table devises). Une caisse par agent et par jour.
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/data_service.dart';
 import '../../data/local_db.dart';
+import '../../data/location_logic.dart' show jourCle;
 import '../../data/remote.dart';
 import '../../profile.dart';
+import '../navigation.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
-const _modules = ['Voyage', 'Fourniture', 'Mobile money', 'Logistique', 'Admin', 'Autre'];
-const _sources = {'paiement': 'Paiement', 'depense': 'Dépense', 'momo': 'Mobile money', 'autre': 'Autre'};
-
 String _usd(num n) => Elk.money((n * 100).round() / 100, 'USD');
-String _jour(Object? j) {
+num _num(Object? v) => v is num ? v : num.tryParse('$v') ?? 0;
+String _jourLong(Object? j) {
   final d = DateTime.tryParse('$j');
-  return d == null ? '$j' : DateFormat('EEE d MMM y', 'fr_FR').format(d);
+  if (d == null) return '$j';
+  final s = DateFormat('EEEE d MMMM', 'fr_FR').format(d);
+  return '${s[0].toUpperCase()}${s.substring(1)}';
+}
+
+/// Choix tout faits pour « Argent reçu » / « Argent sorti » : (libellé, module, type de source).
+const choixEntree = [
+  ('Billet d’avion', 'Voyage'),
+  ('Visa', 'Voyage'),
+  ('Hôtel / assurance', 'Voyage'),
+  ('Location de véhicule', 'Location'),
+  ('Vente fourniture', 'Fourniture'),
+  ('Mobile money', 'Mobile money'),
+  ('Autre', 'Autre'),
+];
+const choixSortie = [
+  ('Carburant', 'Logistique'),
+  ('Transport', 'Logistique'),
+  ('Achat de fournitures', 'Fourniture'),
+  ('Paiement fournisseur', 'Admin'),
+  ('Petites dépenses', 'Admin'),
+  ('Dépôt à la banque', 'Admin'),
+  ('Autre', 'Autre'),
+];
+
+/// Écart entre l'argent compté et ce qui devrait être en caisse : (texte, couleur).
+(String, Color) ecartTexte(num compte, num theorique) {
+  final d = ((compte - theorique) * 100).round() / 100;
+  if (d.abs() < 0.01) return ('C’est juste ✓', Elk.ok);
+  return d < 0 ? ('Il manque ${_usd(-d)}', Elk.crit) : ('Il y a ${_usd(d)} de trop', Elk.warn);
 }
 
 class CaissePage extends StatefulWidget {
@@ -30,13 +62,17 @@ class CaissePage extends StatefulWidget {
 }
 
 class _CaissePageState extends State<CaissePage> {
-  bool loading = true;
+  bool loading = true, histo = false;
   String? error;
   List<JsonRow> devises = [], sessions = [], mouvements = [];
-  JsonRow? current;
+  final _ouverture = TextEditingController();
 
   DataService get data => widget.data;
-  bool get isOpen => current?['statut'] == 'ouverte';
+  String get today => jourCle(DateTime.now());
+
+  /// Ma caisse d'aujourd'hui (ouverte ou déjà fermée), s'il y en a une.
+  JsonRow? get maCaisse =>
+      sessions.where((s) => s['jour'] == today && '${s['agent_id']}' == '${widget.profile.userId}').firstOrNull;
 
   @override
   void initState() {
@@ -44,145 +80,100 @@ class _CaissePageState extends State<CaissePage> {
     _load();
   }
 
-  num _toUsd(Object? montant, Object? deviseId) {
-    final d = devises.where((x) => '${x['id']}' == '$deviseId').firstOrNull;
-    final taux = (d?['taux'] as num?) ?? 1;
-    return ((montant as num?) ?? 0) / (taux == 0 ? 1 : taux);
-  }
-
-  num get entrees =>
-      mouvements.where((m) => m['sens'] == 'entree').fold(0, (s, m) => s + _toUsd(m['montant'], m['devise_id']));
-  num get sorties =>
-      mouvements.where((m) => m['sens'] == 'sortie').fold(0, (s, m) => s + _toUsd(m['montant'], m['devise_id']));
-  num get ouverture => (current?['solde_ouverture'] as num?) ?? 0;
-  num get theorique => ouverture + entrees - sorties;
-
-  Future<void> _load({Object? keepId}) async {
+  Future<void> _load() async {
     setState(() => loading = true);
+    final depuis = jourCle(DateTime.now().subtract(const Duration(days: 30)));
     final r = await Future.wait([
-      data.select('devises', const Query(eq: {'actif': true}, orderBy: 'id')),
-      data.select('caisse_sessions', const Query(embed: ['users(nom)'], orderBy: 'jour', ascending: false, limit: 60)),
+      data.select('devises', const Query(orderBy: 'id')),
+      data.select(
+        'caisse_sessions',
+        Query(embed: const ['users(nom)'], gte: {'jour': depuis}, orderBy: 'jour', ascending: false),
+      ),
+      data.select(
+        'mouvements_caisse',
+        Query(gte: {'cree_le': DateTime.parse(depuis).toUtc().toIso8601String()}, orderBy: 'cree_le', ascending: false),
+      ),
     ]);
-    devises = r[0].data ?? [];
-    sessions = r[1].data ?? [];
-    error = r[1].error ?? r[0].error;
-    final keep = keepId ?? current?['id'];
-    current =
-        sessions.where((s) => s['id'] == keep).firstOrNull ??
-        sessions.where((s) => s['statut'] == 'ouverte').firstOrNull ??
-        sessions.firstOrNull;
-    await _loadMouvements();
+    if (!mounted) return;
+    setState(() {
+      devises = r[0].data ?? [];
+      sessions = r[1].data ?? [];
+      mouvements = r[2].data ?? [];
+      error = r.map((x) => x.error).whereType<String>().firstOrNull;
+      loading = false;
+    });
+    Navigation.prendreAction('caisse'); // « Ouvrir ma caisse » : l'écran affiche déjà le bon bouton
   }
 
-  Future<void> _loadMouvements() async {
-    if (current == null) {
-      mouvements = [];
-    } else {
-      final r = await data.select(
-        'mouvements_caisse',
-        Query(embed: const ['devises(code)'], eq: {'session_id': current!['id']}, orderBy: 'cree_le', ascending: false),
-      );
-      mouvements = r.data ?? [];
-      error ??= r.error;
-    }
-    if (mounted) setState(() => loading = false);
+  num _toUsd(Object? montant, Object? deviseId) {
+    final t = _num(devises.where((x) => '${x['id']}' == '$deviseId').firstOrNull?['taux']);
+    return _num(montant) / (t == 0 ? 1 : t);
   }
+
+  List<JsonRow> _mvts(JsonRow s) => mouvements.where((m) => '${m['session_id']}' == '${s['id']}').toList();
+  num _entrees(JsonRow s) =>
+      _mvts(s).where((m) => m['sens'] == 'entree').fold<num>(0, (a, m) => a + _toUsd(m['montant'], m['devise_id']));
+  num _sorties(JsonRow s) =>
+      _mvts(s).where((m) => m['sens'] == 'sortie').fold<num>(0, (a, m) => a + _toUsd(m['montant'], m['devise_id']));
+  num _theorique(JsonRow s) => _num(s['solde_ouverture']) + _entrees(s) - _sorties(s);
+  String _code(Object? id) => '${devises.where((x) => '${x['id']}' == '$id').firstOrNull?['code'] ?? 'USD'}';
 
   // ---------------------------------------------------------------- actions
-  Future<void> _openSession() async {
-    final res = await showDialog<DataResult<JsonRow>>(
-      context: context,
-      builder: (_) => _OpenSessionDialog(data: data, profile: widget.profile, sessions: sessions),
-    );
-    if (res == null || !mounted) return;
-    toast(context, 'Session ouverte${savedSuffix(res.offline)}');
-    _load(keepId: res.data!['id']);
+  Future<void> _ouvrir() async {
+    final v = parseAmount(_ouverture.text);
+    if (v == null || v < 0) return toast(context, 'Indiquez l’argent présent dans la caisse (0 si elle est vide).');
+    final res = await data.insert('caisse_sessions', {
+      'jour': today,
+      'solde_ouverture': v,
+      'agent_id': widget.profile.userId,
+      'statut': 'ouverte',
+    });
+    if (!mounted) return;
+    if (!res.ok) {
+      return toast(
+        context,
+        res.code == '23505' ? 'Votre caisse est déjà ouverte aujourd’hui.' : 'Erreur : ${res.error}',
+      );
+    }
+    _ouverture.clear();
+    toast(context, 'Caisse ouverte${savedSuffix(res.offline)}');
+    _load();
   }
 
-  Future<void> _newMouvement() async {
+  Future<void> _mouvement(String sens) async {
     final res = await showDialog<DataResult<JsonRow>>(
       context: context,
-      builder: (_) => _MouvementDialog(data: data, profile: widget.profile, session: current!, devises: devises),
+      builder: (_) =>
+          _MouvementDialog(data: data, profile: widget.profile, session: maCaisse!, devises: devises, sens: sens),
     );
     if (res == null || !mounted) return;
-    toast(context, '${res.data!['sens'] == 'entree' ? 'Entrée' : 'Sortie'} enregistrée${savedSuffix(res.offline)}');
-    setState(() => loading = true);
-    _loadMouvements();
+    toast(context, '${sens == 'entree' ? 'Argent reçu' : 'Argent sorti'} noté${savedSuffix(res.offline)}');
+    _load();
   }
 
-  Future<void> _close() async {
+  Future<void> _fermer() async {
+    final s = maCaisse!;
     final res = await showDialog<DataResult<JsonRow>>(
       context: context,
-      builder: (_) => _CloseDialog(data: data, session: current!, theorique: theorique),
+      builder: (_) => _FermerDialog(data: data, session: s, theorique: _theorique(s)),
     );
     if (res == null || !mounted) return;
-    toast(context, 'Session clôturée${savedSuffix(res.offline)}');
+    toast(context, 'Caisse fermée${savedSuffix(res.offline)}');
     _load();
   }
 
   // ---------------------------------------------------------------- écran
   @override
   Widget build(BuildContext context) {
+    final s = maCaisse, muted = Theme.of(context).hintColor;
+    final passees = sessions.where((x) => x != s).toList();
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 40),
       children: [
         PageHeader(
-          title: 'Caisse',
-          subtitle: 'Une session par jour et par agent. Totaux en USD (CDF converti au taux de la table devises).',
+          title: 'Ma caisse',
+          subtitle: 'Notez ici chaque fois que de l’argent entre ou sort de la caisse.',
           actions: [
-            OutlinedButton.icon(
-              onPressed: loading ? null : _openSession,
-              icon: const Icon(Icons.lock_open, size: 18),
-              label: const Text('Ouvrir une session'),
-            ),
-            FilledButton.icon(
-              onPressed: isOpen && !loading ? _newMouvement : null,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Mouvement'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Wrap(
-          spacing: 12,
-          runSpacing: 10,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            SizedBox(
-              width: 420,
-              child: DropdownButtonFormField<Object?>(
-                key: ValueKey('sess-${current?['id']}-${sessions.length}'),
-                initialValue: current?['id'],
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Session'),
-                hint: const Text('Aucune session — ouvre-en une'),
-                items: [
-                  for (final s in sessions)
-                    DropdownMenuItem(
-                      value: s['id'],
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        '${_jour(s['jour'])} · ${(s['users'] as Map?)?['nom'] ?? 'Sans agent'}'
-                        '${s['statut'] == 'cloturee' ? ' · clôturée' : ''}',
-                      ),
-                    ),
-                ],
-                onChanged: (id) {
-                  setState(() {
-                    current = sessions.firstWhere((s) => s['id'] == id);
-                    loading = true;
-                  });
-                  _loadMouvements();
-                },
-              ),
-            ),
-            if (current != null) Pill(isOpen ? 'Ouverte' : 'Clôturée', isOpen ? Elk.ok : Theme.of(context).hintColor),
-            if (isOpen)
-              OutlinedButton.icon(
-                onPressed: loading ? null : _close,
-                icon: const Icon(Icons.lock, size: 18),
-                label: const Text('Clôturer'),
-              ),
             OutlinedButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh, size: 18),
@@ -190,213 +181,288 @@ class _CaissePageState extends State<CaissePage> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            Kpi('Solde d’ouverture', _usd(ouverture)),
-            Kpi('Entrées', _usd(entrees)),
-            Kpi('Sorties', _usd(sorties)),
-            Kpi('Solde théorique', _usd(theorique)),
-          ],
-        ),
-        if (current?['statut'] == 'cloturee' && current?['solde_cloture'] != null) ...[
-          const SizedBox(height: 16),
-          _EcartCard(compte: current!['solde_cloture'] as num, theorique: theorique),
-        ],
-        const SizedBox(height: 16),
-        if (error != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text('Erreur : $error', style: const TextStyle(color: Elk.crit)),
+        const SizedBox(height: 18),
+        if (error != null) Text('Erreur : $error', style: const TextStyle(color: Elk.crit)),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.all(30),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (widget.profile.userId == null)
+          const EtatVide(
+            icone: Icons.person_off_outlined,
+            texte: 'Votre compte n’est pas relié à une fiche employé : demandez à la direction.',
+          )
+        else if (s == null)
+          _carteOuvrir()
+        else if (s['statut'] == 'cloturee')
+          _carteFermee(s)
+        else
+          ..._caisseOuverte(s, muted),
+        const SizedBox(height: 26),
+        if (passees.isNotEmpty)
+          TextButton.icon(
+            onPressed: () => setState(() => histo = !histo),
+            icon: Icon(histo ? Icons.expand_less : Icons.expand_more),
+            label: Text(histo ? 'Masquer les jours précédents' : 'Voir les jours précédents (${passees.length})'),
           ),
-        TableCard(
-          loading: loading,
-          empty: current == null
-              ? 'Aucune session de caisse. Clique « Ouvrir une session ».'
-              : 'Aucun mouvement dans cette session.',
-          columns: const [
-            DataColumn(label: Text('Heure')),
-            DataColumn(label: Text('Libellé')),
-            DataColumn(label: Text('Module')),
-            DataColumn(label: Text('Nature')),
-            DataColumn(label: Text('Sens')),
-            DataColumn(label: Text('Montant'), numeric: true),
-          ],
-          rows: [
-            for (final m in mouvements)
-              DataRow(
-                cells: [
-                  DataCell(Text(_heure(m['cree_le']))),
-                  DataCell(Text('${m['libelle'] ?? ''}')),
-                  DataCell(Text('${m['module'] ?? '—'}')),
-                  DataCell(Text(_sources[m['source_type']] ?? '${m['source_type'] ?? '—'}')),
-                  DataCell(m['sens'] == 'entree' ? const Pill('Entrée', Elk.ok) : const Pill('Sortie', Elk.crit)),
-                  DataCell(
-                    Text(
-                      '${m['sens'] == 'entree' ? '+' : '−'} ${Elk.money(m['montant'], (m['devises'] as Map?)?['code'] as String?)}',
-                      style: TextStyle(color: m['sens'] == 'entree' ? Elk.ok : Elk.crit, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
+        if (histo)
+          for (final x in passees)
+            Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                title: Text(
+                  '${_jourLong(x['jour'])} · ${(x['users'] as Map?)?['nom'] ?? 'Sans agent'}',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text(
+                  'Départ ${_usd(_num(x['solde_ouverture']))} · reçu ${_usd(_entrees(x))} · sorti ${_usd(_sorties(x))}',
+                ),
+                trailing: x['statut'] == 'cloturee' && x['solde_cloture'] != null
+                    ? Pill(
+                        ecartTexte(_num(x['solde_cloture']), _theorique(x)).$1,
+                        ecartTexte(_num(x['solde_cloture']), _theorique(x)).$2,
+                      )
+                    : const Pill('Pas fermée', Elk.warn),
               ),
-          ],
-        ),
+            ),
       ],
     );
   }
 
-  static String _heure(Object? t) {
-    final d = DateTime.tryParse('$t');
-    return d == null ? '—' : DateFormat.Hm('fr_FR').format(d.toLocal());
-  }
-}
+  Widget _carteOuvrir() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.lock_open, color: Elk.navy2, size: 30),
+              SizedBox(width: 12),
+              Text(
+                'Votre caisse n’est pas encore ouverte',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Comptez l’argent qui est dans la caisse ce matin, puis indiquez le montant.',
+            style: TextStyle(fontSize: 15, color: Theme.of(context).hintColor),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SizedBox(
+                width: 260,
+                child: TextField(
+                  controller: _ouverture,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  decoration: const InputDecoration(
+                    labelText: 'Argent dans la caisse (USD)',
+                    suffixText: '\$',
+                    hintText: '0',
+                  ),
+                  onSubmitted: (_) => _ouvrir(),
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _ouvrir,
+                icon: const Icon(Icons.lock_open),
+                label: const Text('Ouvrir ma caisse'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 
-class _EcartCard extends StatelessWidget {
-  const _EcartCard({required this.compte, required this.theorique});
-  final num compte, theorique;
-  @override
-  Widget build(BuildContext context) {
-    final diff = compte - theorique;
-    final (label, color) = diff.abs() < 0.005
-        ? ('Caisse juste', Elk.ok)
-        : diff > 0
-        ? ('Excédent', Elk.warn)
-        : ('Manquant', Elk.crit);
+  Widget _carteFermee(JsonRow s) {
+    final (texte, couleur) = ecartTexte(_num(s['solde_cloture']), _theorique(s));
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(17),
-        child: Wrap(
-          spacing: 18,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        padding: const EdgeInsets.all(24),
+        child: Row(
           children: [
-            const Text('Clôture', style: TextStyle(fontWeight: FontWeight.w700)),
-            Text('Solde compté : ${_usd(compte)}'),
-            Text('Écart : ${diff > 0 ? '+' : ''}${_usd(diff)}'),
-            Pill(label, color),
+            Icon(Icons.lock, color: couleur, size: 34),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Caisse fermée pour aujourd’hui',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Compté le soir : ${_usd(_num(s['solde_cloture']))} · attendu : ${_usd(_theorique(s))}',
+                    style: TextStyle(fontSize: 15, color: Theme.of(context).hintColor),
+                  ),
+                ],
+              ),
+            ),
+            Pill(texte, couleur),
           ],
         ),
       ),
     );
   }
-}
 
-// ------------------------------------------------------------------ dialogues
-class _OpenSessionDialog extends StatefulWidget {
-  const _OpenSessionDialog({required this.data, required this.profile, required this.sessions});
-  final DataService data;
-  final Profile profile;
-  final List<JsonRow> sessions;
-  @override
-  State<_OpenSessionDialog> createState() => _OpenSessionDialogState();
-}
-
-class _OpenSessionDialogState extends State<_OpenSessionDialog> {
-  final _form = GlobalKey<FormState>();
-  final _solde = TextEditingController();
-  DateTime jour = DateTime.now();
-  bool busy = false;
-  String error = '';
-
-  Future<void> _save() async {
-    if (!_form.currentState!.validate()) return;
-    final j = DateFormat('yyyy-MM-dd').format(jour);
-    // contrôle aussi fait ici : hors ligne, la base ne peut pas le vérifier
-    if (widget.sessions.any((s) => s['jour'] == j && s['agent_id'] == widget.profile.userId)) {
-      return setState(() => error = 'Une session existe déjà pour ce jour et cet agent.');
-    }
-    setState(() => busy = true);
-    final res = await widget.data.insert('caisse_sessions', {
-      'jour': j,
-      'solde_ouverture': parseAmount(_solde.text),
-      'agent_id': widget.profile.userId,
-      'statut': 'ouverte',
-    });
-    if (!mounted) return;
-    if (!res.ok) {
-      return setState(() {
-        busy = false;
-        error = res.code == '23505' ? 'Une session existe déjà pour ce jour et cet agent.' : 'Erreur : ${res.error}';
-      });
-    }
-    Navigator.pop(context, res);
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Ouvrir une session de caisse'),
-    content: SizedBox(
-      width: 520,
-      child: Form(
-        key: _form,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            formGrid([
-              InputDecorator(
-                decoration: const InputDecoration(labelText: 'Jour'),
-                child: InkWell(
-                  onTap: () async {
-                    final d = await showDatePicker(
-                      context: context,
-                      initialDate: jour,
-                      firstDate: DateTime(2024),
-                      lastDate: DateTime.now().add(const Duration(days: 1)),
-                      locale: const Locale('fr', 'FR'),
-                    );
-                    if (d != null) setState(() => jour = d);
-                  },
-                  child: Text(DateFormat('EEEE d MMMM y', 'fr_FR').format(jour)),
-                ),
+  List<Widget> _caisseOuverte(JsonRow s, Color muted) {
+    final mvts = _mvts(s);
+    return [
+      // le grand chiffre
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Wrap(
+            spacing: 30,
+            runSpacing: 18,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'En caisse maintenant',
+                    style: TextStyle(fontSize: 15, color: muted, fontWeight: FontWeight.w700),
+                  ),
+                  Text(
+                    _usd(_theorique(s)),
+                    style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w800, letterSpacing: -1),
+                  ),
+                  Text(
+                    'Départ ${_usd(_num(s['solde_ouverture']))} · reçu + ${_usd(_entrees(s))} · sorti − ${_usd(_sorties(s))}',
+                    style: TextStyle(color: muted),
+                  ),
+                ],
               ),
-              AmountField(controller: _solde, label: 'Solde d’ouverture (USD)', allowZero: true),
-            ]),
-            if (error.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(error, style: const TextStyle(color: Elk.crit)),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    height: 64,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Elk.ok,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontFamily: Elk.font, fontSize: 17, fontWeight: FontWeight.w800),
+                      ),
+                      onPressed: () => _mouvement('entree'),
+                      icon: const Icon(Icons.add_circle_outline, size: 26),
+                      label: const Text('Argent reçu'),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 64,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Elk.crit,
+                        foregroundColor: Colors.white,
+                        textStyle: const TextStyle(fontFamily: Elk.font, fontSize: 17, fontWeight: FontWeight.w800),
+                      ),
+                      onPressed: () => _mouvement('sortie'),
+                      icon: const Icon(Icons.remove_circle_outline, size: 26),
+                      label: const Text('Argent sorti'),
+                    ),
+                  ),
+                ],
               ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-    actions: [
-      TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: const Text('Annuler')),
-      FilledButton(onPressed: busy ? null : _save, child: Text(busy ? 'Ouverture…' : 'Ouvrir')),
-    ],
-  );
+      const SizedBox(height: 20),
+      const TitreSection('Aujourd’hui'),
+      const SizedBox(height: 8),
+      if (mvts.isEmpty)
+        const EtatVide(icone: Icons.receipt_long_outlined, texte: 'Rien de noté pour l’instant aujourd’hui.')
+      else
+        for (final m in mvts)
+          Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: Icon(
+                m['sens'] == 'entree' ? Icons.south_west : Icons.north_east,
+                color: m['sens'] == 'entree' ? Elk.ok : Elk.crit,
+              ),
+              title: Text('${m['libelle'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: Text(
+                m['cree_le'] == null ? '' : DateFormat.Hm('fr_FR').format(DateTime.parse('${m['cree_le']}').toLocal()),
+              ),
+              trailing: Text(
+                '${m['sens'] == 'entree' ? '+' : '−'} ${Elk.money(m['montant'], _code(m['devise_id']))}',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: m['sens'] == 'entree' ? Elk.ok : Elk.crit,
+                ),
+              ),
+            ),
+          ),
+      const SizedBox(height: 16),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: _fermer,
+          icon: const Icon(Icons.lock),
+          label: const Text('Fermer ma caisse (fin de journée)'),
+        ),
+      ),
+    ];
+  }
 }
 
+// ------------------------------------------------------------------ argent reçu / sorti
 class _MouvementDialog extends StatefulWidget {
-  const _MouvementDialog({required this.data, required this.profile, required this.session, required this.devises});
+  const _MouvementDialog({
+    required this.data,
+    required this.profile,
+    required this.session,
+    required this.devises,
+    required this.sens,
+  });
   final DataService data;
   final Profile profile;
   final JsonRow session;
   final List<JsonRow> devises;
+  final String sens; // entree | sortie
   @override
   State<_MouvementDialog> createState() => _MouvementDialogState();
 }
 
 class _MouvementDialogState extends State<_MouvementDialog> {
   final _form = GlobalKey<FormState>();
-  final _lib = TextEditingController();
   final _montant = TextEditingController();
-  String sens = 'entree', module = _modules.first, source = 'paiement';
-  late Object? devise = widget.devises.firstOrNull?['id'];
+  final _detail = TextEditingController();
+  (String, String)? choix;
+  late Object? devise =
+      (widget.devises.where((x) => x['code'] == 'USD').firstOrNull ?? widget.devises.firstOrNull)?['id'];
   bool busy = false;
 
+  bool get entree => widget.sens == 'entree';
+
   Future<void> _save() async {
+    if (choix == null) {
+      return toast(context, entree ? 'Choisissez d’où vient l’argent.' : 'Choisissez pour quoi l’argent est sorti.');
+    }
     if (!_form.currentState!.validate()) return;
     setState(() => busy = true);
+    final detail = _detail.text.trim();
     final res = await widget.data.insert('mouvements_caisse', {
       'session_id': widget.session['id'],
-      'sens': sens,
-      'libelle': _lib.text.trim(),
-      'module': module,
-      'source_type': source,
+      'sens': widget.sens,
+      'libelle': detail.isEmpty ? choix!.$1 : '${choix!.$1} · $detail',
+      'module': choix!.$2,
+      'source_type': entree ? 'paiement' : 'depense',
       'montant': parseAmount(_montant.text),
       'devise_id': devise,
       'agent_id': widget.profile.userId,
@@ -411,25 +477,63 @@ class _MouvementDialogState extends State<_MouvementDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Nouveau mouvement'),
+    title: Row(
+      children: [
+        Icon(
+          entree ? Icons.add_circle_outline : Icons.remove_circle_outline,
+          color: entree ? Elk.ok : Elk.crit,
+          size: 28,
+        ),
+        const SizedBox(width: 10),
+        Text(entree ? 'Argent reçu' : 'Argent sorti'),
+      ],
+    ),
     content: SizedBox(
-      width: 520,
+      width: 540,
       child: Form(
         key: _form,
-        child: formGrid([
-          dropdown<String>('Sens', sens, const {'entree': 'Entrée', 'sortie': 'Sortie'}, (v) => sens = v ?? sens),
-          TextFormField(
-            controller: _lib,
-            decoration: const InputDecoration(labelText: 'Libellé', hintText: 'Ex. Billet ELK-2041, carburant…'),
-            validator: (v) => (v ?? '').trim().isEmpty ? 'Libellé requis' : null,
-          ),
-          dropdown<String>('Module', module, {for (final m in _modules) m: m}, (v) => module = v ?? module),
-          dropdown<String>('Nature', source, _sources, (v) => source = v ?? source),
-          AmountField(controller: _montant, label: 'Montant'),
-          dropdown<Object?>('Devise', devise, {
-            for (final d in widget.devises) d['id']: '${d['code']}',
-          }, (v) => devise = v),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Etape('1', entree ? 'D’où vient cet argent ?' : 'Pour quoi ?'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final c in entree ? choixEntree : choixSortie)
+                  ChoiceChip(
+                    label: Text(c.$1),
+                    selected: choix == c,
+                    showCheckmark: false,
+                    onSelected: (_) => setState(() => choix = c),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Etape('2', 'Combien ?'),
+            formGrid([
+              TextFormField(
+                controller: _montant,
+                autofocus: true,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                decoration: const InputDecoration(labelText: 'Montant'),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (v) => (parseAmount(v) ?? 0) > 0 ? null : 'Indiquez le montant',
+              ),
+              dropdown<Object?>('Devise', devise, {
+                for (final x in widget.devises) x['id']: '${x['code']}',
+              }, (v) => setState(() => devise = v)),
+            ]),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _detail,
+              decoration: InputDecoration(
+                labelText: entree ? 'Détail : nom du client, n° de dossier… (facultatif)' : 'Détail (facultatif)',
+              ),
+            ),
+          ],
+        ),
       ),
     ),
     actions: [
@@ -439,25 +543,26 @@ class _MouvementDialogState extends State<_MouvementDialog> {
   );
 }
 
-class _CloseDialog extends StatefulWidget {
-  const _CloseDialog({required this.data, required this.session, required this.theorique});
+// ------------------------------------------------------------------ fermer la caisse
+class _FermerDialog extends StatefulWidget {
+  const _FermerDialog({required this.data, required this.session, required this.theorique});
   final DataService data;
   final JsonRow session;
   final num theorique;
   @override
-  State<_CloseDialog> createState() => _CloseDialogState();
+  State<_FermerDialog> createState() => _FermerDialogState();
 }
 
-class _CloseDialogState extends State<_CloseDialog> {
-  final _form = GlobalKey<FormState>();
-  late final _compte = TextEditingController(text: ((widget.theorique * 100).round() / 100).toString());
+class _FermerDialogState extends State<_FermerDialog> {
+  final _compte = TextEditingController();
   bool busy = false;
 
   Future<void> _save() async {
-    if (!_form.currentState!.validate()) return;
+    final v = parseAmount(_compte.text);
+    if (v == null || v < 0) return toast(context, 'Indiquez l’argent compté dans la caisse.');
     setState(() => busy = true);
     final res = await widget.data.update('caisse_sessions', widget.session['id'] as Object, {
-      'solde_cloture': parseAmount(_compte.text),
+      'solde_cloture': v,
       'statut': 'cloturee',
     });
     if (!mounted) return;
@@ -469,36 +574,54 @@ class _CloseDialogState extends State<_CloseDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: Text('Clôturer la session du ${_jour(widget.session['jour'])}'),
-    content: SizedBox(
-      width: 520,
-      child: Form(
-        key: _form,
+  Widget build(BuildContext context) {
+    final v = parseAmount(_compte.text);
+    final ecart = v == null ? null : ecartTexte(v, widget.theorique);
+    return AlertDialog(
+      title: const Text('Fermer ma caisse'),
+      content: SizedBox(
+        width: 480,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Saisis le solde réellement compté. L’écart avec le solde théorique est conservé pour le suivi. '
-              'Plus aucun mouvement ne pourra être ajouté ensuite.',
-              style: TextStyle(color: Theme.of(context).hintColor),
+              'Comptez tout l’argent qui est dans la caisse, puis indiquez le montant.',
+              style: TextStyle(fontSize: 15, color: Theme.of(context).hintColor),
             ),
-            const SizedBox(height: 14),
-            formGrid([
-              AmountField(controller: _compte, label: 'Solde compté (USD)', allowZero: true),
-              InputDecorator(
-                decoration: const InputDecoration(labelText: 'Solde théorique (USD)'),
-                child: Text(_usd(widget.theorique)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _compte,
+              autofocus: true,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Argent compté (USD)', suffixText: '\$'),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Selon vos notes, il devrait y avoir ${_usd(widget.theorique)}.',
+              style: const TextStyle(fontSize: 15),
+            ),
+            if (ecart != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                ecart.$1,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: ecart.$2),
               ),
-            ]),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              'Après la fermeture, on ne peut plus rien ajouter pour aujourd’hui.',
+              style: TextStyle(color: Theme.of(context).hintColor, fontSize: 13),
+            ),
           ],
         ),
       ),
-    ),
-    actions: [
-      TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: const Text('Annuler')),
-      FilledButton(onPressed: busy ? null : _save, child: Text(busy ? 'Clôture…' : 'Clôturer')),
-    ],
-  );
+      actions: [
+        TextButton(onPressed: busy ? null : () => Navigator.pop(context), child: const Text('Annuler')),
+        FilledButton(onPressed: busy ? null : _save, child: Text(busy ? 'Fermeture…' : 'Fermer ma caisse')),
+      ],
+    );
+  }
 }

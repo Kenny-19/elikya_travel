@@ -68,8 +68,38 @@ void main() {
     );
     expect(find.text('Mobile Money'), findsNothing);
     expect(find.text('Fourniture'), findsOneWidget);
+    await t.tap(find.text('Voyage')); // l'app s'ouvre sur l'Accueil
+    await t.pumpAndSettle();
     expect(find.textContaining('ELK-2041'), findsOneWidget);
     expect(find.text('Confirmé'), findsOneWidget);
+    await data.local.close();
+  });
+
+  testWidgets('accueil : gros boutons selon le rôle et « À faire aujourd’hui »', (t) async {
+    final data = await pumpShell(t, _p('Agent Mobile Money', {'momo': true, 'caisse': true}));
+    expect(find.text('Bonjour Test 👋'), findsOneWidget);
+    expect(find.text('Dépôt mobile money'), findsOneWidget);
+    expect(find.text('Ma caisse du jour'), findsOneWidget);
+    expect(find.text('Nouveau billet, visa ou hôtel'), findsNothing, reason: 'pas le droit voyage');
+    // la caisse de test date du 22/11 et n'est pas fermée ; aucune caisse ouverte aujourd'hui
+    expect(find.text('Votre caisse n’est pas encore ouverte aujourd’hui.'), findsOneWidget);
+    await data.local.close();
+  });
+
+  testWidgets('accueil : « Retrait mobile money » ouvre directement le formulaire', (t) async {
+    final data = await pumpShell(t, _p('Agent Mobile Money', {'momo': true, 'caisse': true}));
+    await t.tap(find.text('Retrait mobile money'));
+    await t.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.descendant(of: find.byType(AlertDialog), matching: find.text('Retrait mobile money')), findsOneWidget);
+    await data.local.close();
+  });
+
+  testWidgets('accueil : un clic sur « À faire » mène au bon module', (t) async {
+    final data = await pumpShell(t, _p('Agent Mobile Money', {'momo': true, 'caisse': true}));
+    await t.tap(find.text('Votre caisse n’est pas encore ouverte aujourd’hui.'));
+    await t.pumpAndSettle();
+    expect(find.text('Ouvrir ma caisse'), findsOneWidget);
     await data.local.close();
   });
 }

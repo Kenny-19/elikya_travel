@@ -52,7 +52,11 @@ class Elk {
       scaffoldBackgroundColor: dark ? const Color(0xFF071831) : mist,
       hintColor: muted,
       dividerColor: lineC,
-      textTheme: base.textTheme.apply(bodyColor: ink, displayColor: ink),
+      // lisibilité : texte légèrement agrandi partout (utilisateurs peu habitués à l'ordinateur)
+      // (tailles de référence Material fusionnées d'abord : fontSizeFactor exige une taille définie)
+      textTheme: Typography.englishLike2021
+          .merge(base.textTheme)
+          .apply(bodyColor: ink, displayColor: ink, fontSizeFactor: 1.06),
       cardTheme: CardThemeData(
         elevation: 0,
         color: surface,
@@ -88,6 +92,7 @@ class Elk {
           disabledBackgroundColor: accent.withValues(alpha: .35),
           textStyle: const TextStyle(fontFamily: font, fontWeight: FontWeight.w700, fontSize: 14),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          minimumSize: const Size(0, 48), // boutons faciles à viser
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
@@ -97,6 +102,7 @@ class Elk {
           side: BorderSide(color: lineC),
           textStyle: const TextStyle(fontFamily: font, fontWeight: FontWeight.w700, fontSize: 14),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          minimumSize: const Size(0, 48),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
@@ -122,8 +128,19 @@ class Elk {
           letterSpacing: .8,
           color: muted,
         ),
-        dataTextStyle: TextStyle(fontFamily: font, fontSize: 13, color: ink),
+        dataTextStyle: TextStyle(fontFamily: font, fontSize: 14, color: ink),
         dividerThickness: 1,
+      ),
+      // choix (pastilles) : la sélection doit sauter aux yeux
+      chipTheme: ChipThemeData(
+        selectedColor: accent.withValues(alpha: .28),
+        labelStyle: TextStyle(fontFamily: font, color: ink, fontWeight: FontWeight.w600),
+        side: WidgetStateBorderSide.resolveWith(
+          (s) => BorderSide(
+            color: s.contains(WidgetState.selected) ? accent : lineC,
+            width: s.contains(WidgetState.selected) ? 2 : 1,
+          ),
+        ),
       ),
       snackBarTheme: const SnackBarThemeData(
         backgroundColor: navy,

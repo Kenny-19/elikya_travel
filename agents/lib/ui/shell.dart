@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../data/data_service.dart';
 import '../profile.dart';
 import 'modules.dart';
+import 'navigation.dart';
 import 'theme.dart';
 
 class Shell extends StatefulWidget {
@@ -16,7 +17,7 @@ class Shell extends StatefulWidget {
 }
 
 class _ShellState extends State<Shell> {
-  late final List<ModuleDef> allowed = modules.where((m) => widget.profile.can(m.perm)).toList();
+  late final List<ModuleDef> allowed = modules.where((m) => m.visiblePour(widget.profile)).toList();
   int index = 0;
   int reload = 0; // incrémenté à la resynchronisation → la page relit la base en ligne
 
@@ -24,12 +25,22 @@ class _ShellState extends State<Shell> {
   void initState() {
     super.initState();
     widget.data.status.addListener(_onStatus);
+    Navigation.demande.addListener(_onNavigation);
   }
 
   @override
   void dispose() {
     widget.data.status.removeListener(_onStatus);
+    Navigation.demande.removeListener(_onNavigation);
     super.dispose();
+  }
+
+  // l'accueil (ou une autre page) demande d'aller dans un module
+  void _onNavigation() {
+    final d = Navigation.demande.value;
+    if (d == null) return;
+    final i = allowed.indexWhere((m) => m.id == d.$1);
+    if (i >= 0 && i != index && mounted) setState(() => index = i);
   }
 
   void _onStatus() {

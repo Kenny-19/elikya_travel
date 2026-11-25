@@ -73,7 +73,7 @@ class _AuthGateState extends State<AuthGate> {
       return _deny('Erreur : ${e.message}');
     }
 
-    if (!modules.any((m) => p!.can(m.perm))) {
+    if (!modules.any((m) => m.perm != null && p!.can(m.perm!))) {
       return _deny('Aucun module n\'est ouvert pour le rôle « ${p.role} ».');
     }
     setState(() {

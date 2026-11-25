@@ -8,6 +8,7 @@ import '../../data/data_service.dart';
 import '../../data/local_db.dart';
 import '../../data/remote.dart';
 import '../../profile.dart';
+import '../navigation.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -83,6 +84,7 @@ class _ClientsPageState extends State<ClientsPage> {
       error = r.map((x) => x.error).whereType<String>().firstOrNull;
       loading = false;
     });
+    if (Navigation.prendreAction('clients') == 'nouveau') _edit(); // bouton de l'accueil
   }
 
   Future<void> _edit([JsonRow? c]) async {

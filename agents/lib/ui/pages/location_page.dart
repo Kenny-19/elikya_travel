@@ -13,6 +13,7 @@ import '../../data/local_db.dart';
 import '../../data/location_logic.dart';
 import '../../data/remote.dart';
 import '../../profile.dart';
+import '../navigation.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -73,6 +74,10 @@ class _LocationPageState extends State<LocationPage> {
       error = r.map((x) => x.error).whereType<String>().firstOrNull;
       loading = false;
     });
+    // bouton de l'accueil
+    if (Navigation.prendreAction('location') == 'louer' && vehicules.any((v) => v['statut'] == 'disponible')) {
+      _louer();
+    }
   }
 
   JsonRow? _vehicule(Object? id) => vehicules.where((v) => '${v['id']}' == '$id').firstOrNull;

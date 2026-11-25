@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/data_service.dart';
 import '../profile.dart';
+import 'pages/accueil_page.dart';
 import 'pages/caisse_page.dart';
 import 'pages/momo_page.dart';
 import 'pages/clients_page.dart';
@@ -12,15 +13,22 @@ import 'pages/location_page.dart';
 import 'pages/voyage_page.dart';
 
 class ModuleDef {
-  const ModuleDef({required this.id, required this.label, required this.icon, required this.perm, required this.build});
+  const ModuleDef({required this.id, required this.label, required this.icon, this.perm, required this.build});
   final String id;
   final String label;
   final IconData icon;
-  final String perm; // clé dans roles.permissions
+  final String? perm; // clé dans roles.permissions ; null = toujours visible (Accueil)
+  bool visiblePour(Profile p) => perm == null || p.can(perm!);
   final Widget Function(DataService data, Profile profile) build;
 }
 
 final modules = <ModuleDef>[
+  ModuleDef(
+    id: 'accueil',
+    label: 'Accueil',
+    icon: Icons.home_outlined,
+    build: (d, p) => AccueilPage(data: d, profile: p),
+  ),
   ModuleDef(
     id: 'voyage',
     label: 'Voyage',
