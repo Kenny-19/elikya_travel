@@ -8,7 +8,7 @@
 create extension if not exists pgcrypto;   -- gen_random_uuid()
 
 -- Repartir propre (ordre inverse des dépendances) --------------------
-drop table if exists audit_log, mouvements_caisse, caisse_sessions,
+drop table if exists locations, vehicules, audit_log, mouvements_caisse, caisse_sessions,
   paiements, momo_transactions, momo_comptes, commande_lignes, commandes,
   produits, dossiers, clients, users, roles, devises, parametres cascade;
 

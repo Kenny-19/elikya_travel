@@ -103,3 +103,17 @@ test/                      tests de la logique hors ligne + des rôles
 - Filet de sécurité : `Elikya.data.insert/update` refusent toute écriture en lecture seule.
 - Les saisies se font dans l'app agents (Flutter). Pour réactiver la saisie sur le site : `readOnly = false`.
 - Nouveau module du site : marquer tout bouton / formulaire de saisie avec `data-ecriture`.
+
+## Location de véhicules (`db/location.sql`)
+- Tables `vehicules` (parc, tarif/jour, supplément chauffeur/jour, statut disponible / entretien /
+  hors service) et `locations` (client, véhicule, du … au …, avec ou sans chauffeur, montant, caution,
+  statut réservée → en cours → terminée, ou annulée). Droit `location` (chargé de vente par défaut).
+- **Anti-double réservation dans la base** : contrainte d'exclusion (`btree_gist`) sur
+  (véhicule, période) pour les locations réservées / en cours → même deux postes hors ligne ne
+  peuvent pas louer le même véhicule sur des dates qui se chevauchent (la 2ᵉ synchro est refusée).
+- Règles identiques app / site : jours facturés = départ et retour inclus ; montant proposé =
+  jours × (tarif + supplément chauffeur), modifiable ; états du jour (disponible, clés à remettre,
+  loué, retour en retard, entretien). `agents/lib/data/location_logic.dart` = `web/js/stats.js` (loc*).
+- Interface pensée « très simple » : une carte par véhicule, état en couleur + libellé, un seul
+  gros bouton (Louer · Remettre les clés · Véhicule rendu) ; louer = client + calendrier + interrupteur
+  chauffeur, total calculé, options repliées.

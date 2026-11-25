@@ -41,6 +41,7 @@ docs/                   architecture.md, roadmap.md
 - ✅ App agents Flutter : connexion, menu par rôle, hors ligne SQLite, Voyage, Caisse, Mobile Money, Fourniture, Clients
 - ✅ Site : tableau de bord + rapports mensuels (export Excel, impression PDF)
 - ✅ Super admin : entrée cachée du site pour créer les comptes agents et gérer les rôles (`docs/super-admin.md`)
+- ✅ Location de véhicules (app agents + site + tableau de bord) : lancer `db/location.sql` dans Supabase
 - ✅ Site en ligne : https://elikya0travel.netlify.app (mises à jour : `git push`, voir `docs/mise-en-ligne.md`) 
 - ✅ Installeur Windows de l'app agents : `node scripts/build-installer.js` (voir `agents/README.md`)
 

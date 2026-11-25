@@ -13,8 +13,9 @@ Elikya.registerModule({
     var OPS = { airtel:'Airtel Money', orange:'Orange Money', mpesa:'M-Pesa' };
     var SERIES = [
       { key:'Voyage', label:'Voyage', color:'var(--series-1)' },
-      { key:'Fourniture', label:'Fourniture', color:'var(--series-2)' },
-      { key:'Mobile Money', label:'Mobile Money (volume)', color:'var(--series-3)' }
+      { key:'Location', label:'Location', color:'var(--series-2)' },
+      { key:'Fourniture', label:'Fourniture', color:'var(--series-3)' },
+      { key:'Mobile Money', label:'Mobile Money (volume)', color:'var(--series-4)' }
     ];
     var preset = 'semaine';
     try{ preset = localStorage.getItem('elikya-dash-periode') || preset; }catch(e){}
@@ -30,7 +31,7 @@ Elikya.registerModule({
         '<div class="toolbar" style="margin:0"><div class="seg" id="seg">'+
           Object.keys(PERIODES).map(function(k){ return '<button data-p="'+k+'">'+PERIODES[k]+'</button>'; }).join('')+
         '</div><button class="btn" id="refreshBtn">↻</button></div></div>'+
-      '<div class="row k4" id="tiles" style="margin-bottom:16px"></div>'+
+      '<div class="row tiles-auto" id="tiles" style="margin-bottom:16px"></div>'+
       '<div class="grid2" style="margin-bottom:16px">'+
         '<div class="card"><h3 id="chartTitle">Activité par jour</h3><div id="chart"><span class="spin"></span></div></div>'+
         '<div class="card"><h3>À traiter</h3><ul class="alerts" id="alerts"><li><span class="spin"></span></li></ul></div>'+
@@ -73,7 +74,9 @@ Elikya.registerModule({
         store.select('momo_transactions', { eq:{ statut:'en_attente' } }),
         store.select('commandes', { eq:{ statut:'a_livrer' } }),
         store.select('dossiers', { eq:{ statut:'devis' } }),
-        store.select('dossiers', { eq:{ statut:'en_cours' } })
+        store.select('dossiers', { eq:{ statut:'en_cours' } }),
+        store.select('locations', since),                                   // r[12]
+        store.select('locations', { eq:{ statut:'en_cours' } })             // r[13] : retours en retard
       ]);
       var err = r.filter(function(x){ return x.error; })[0];
       var devises = r[0].data||[], sessions = r[4].data||[];
@@ -86,13 +89,14 @@ Elikya.registerModule({
       if(!$('#tiles')) return;   // on a changé d'écran pendant le chargement
       var mouvements = mv.data||[];
 
-      var src = { devises:devises, dossiers:r[1].data||[], commandes:r[2].data||[], momo_transactions:r[3].data||[] };
+      var src = { devises:devises, dossiers:r[1].data||[], commandes:r[2].data||[], momo_transactions:r[3].data||[], locations:r[12].data||[] };
       var entries = S.journal(src);
       var cur = S.totals(entries, P.from, P.to), prev = S.totals(entries, P.prevFrom, P.prevTo);
       var cz = S.caisse({ devises:devises, caisse_sessions:utiles, mouvements_caisse:mouvements });
 
       $('#tiles').innerHTML =
         tile('Ventes voyage', usd(cur['Voyage']), S.delta(cur['Voyage'], prev['Voyage']), cur.nb['Voyage']+' dossier(s)')+
+        tile('Location de véhicules', usd(cur['Location']), S.delta(cur['Location'], prev['Location']), cur.nb['Location']+' location(s)')+
         tile('Ventes fourniture', usd(cur['Fourniture']), S.delta(cur['Fourniture'], prev['Fourniture']), cur.nb['Fourniture']+' commande(s)')+
         tile('Volume Mobile Money', usd(cur['Mobile Money']), S.delta(cur['Mobile Money'], prev['Mobile Money']), 'Commissions : '+usd(cur.frais))+
         tile('Caisse (sessions ouvertes)', usd(cz.soldeOuvert), undefined, cz.ouvertes.length+' session(s) ouverte(s) · solde théorique');
@@ -107,7 +111,7 @@ Elikya.registerModule({
       var al = S.alertes({
         devises:devises, produits:r[5].data||[], caisse_sessions:utiles, mouvements_caisse:mouvements,
         momo_transactions: (r[8].data||[]).concat(periodTx.filter(function(t){ return t.statut === 'echec'; })),
-        commandes: r[9].data||[], dossiers: (r[10].data||[]).concat(r[11].data||[])
+        commandes: r[9].data||[], dossiers: (r[10].data||[]).concat(r[11].data||[]), locations: r[13].data||[]
       });
       var ICON = { crit:['Urgent','crit'], warn:['À voir','warn'], info:['Info','info'] };
       $('#alerts').innerHTML = al.length ? al.map(function(a){

@@ -8,6 +8,7 @@ import 'pages/caisse_page.dart';
 import 'pages/momo_page.dart';
 import 'pages/clients_page.dart';
 import 'pages/fourniture_page.dart';
+import 'pages/location_page.dart';
 import 'pages/voyage_page.dart';
 
 class ModuleDef {
@@ -26,6 +27,13 @@ final modules = <ModuleDef>[
     icon: Icons.flight_takeoff,
     perm: 'voyage',
     build: (d, p) => VoyagePage(data: d, profile: p),
+  ),
+  ModuleDef(
+    id: 'location',
+    label: 'Location',
+    icon: Icons.directions_car_outlined,
+    perm: 'location',
+    build: (d, p) => LocationPage(data: d, profile: p),
   ),
   ModuleDef(
     id: 'caisse',

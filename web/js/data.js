@@ -13,7 +13,7 @@
 (function(){
   var E = window.Elikya;
   var DB_NAME = 'elikya-local';
-  var DB_VERSION = 1;           // ⚠ incrémenter si on ajoute une table à TABLES
+  var DB_VERSION = 2;           // ⚠ incrémenter si on ajoute une table à TABLES
   var TIMEOUT_MS = 8000;        // au-delà, on considère Supabase injoignable
   var PROBE_MS = 15000;         // test de reconnexion quand hors ligne
   var WARM_LIMIT = 1000;        // lignes récentes copiées par table au démarrage
@@ -34,7 +34,10 @@
     caisse_sessions:   { order:'jour', rels:{ users:['users','agent_id'] } },
     paiements:         { ts:true, rels:{ devises:['devises','devise_id'], users:['users','recu_par'] } },
     mouvements_caisse: { ts:true, rels:{ devises:['devises','devise_id'], caisse_sessions:['caisse_sessions','session_id'], users:['users','agent_id'] } },
-    parametres:        { key:'cle' }
+    parametres:        { key:'cle' },
+    // location de véhicules (db/location.sql)
+    vehicules:         { ts:true },
+    locations:         { ts:true, rels:{ clients:['clients','client_id'], vehicules:['vehicules','vehicule_id'], devises:['devises','devise_id'], users:['users','agent_id'] } }
   };
   function keyOf(t){ return (TABLES[t] && TABLES[t].key) || 'id'; }
 

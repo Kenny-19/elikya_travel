@@ -121,8 +121,8 @@ tbody tr:hover{background:var(--panel2)}
 .lnk{background:none;border:0;padding:0;font:inherit;font-weight:700;color:inherit;text-decoration:underline;cursor:pointer}
 
 /* ===== graphiques (palette validée skill dataviz : bleu, orange, vert d’eau — fond blanc / fond marine #0b1f3a) ===== */
-:root{--series-1:#2a78d6;--series-2:#eb6834;--series-3:#1baf7a;--grid:#e6ebf2;--axis-line:#c9d2df;--up:var(--ok);--down:var(--crit)}
-@media(prefers-color-scheme:dark){:root{--series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;--grid:#16325c;--axis-line:#1d3a66}}
+:root{--series-1:#2a78d6;--series-2:#eb6834;--series-3:#1baf7a;--series-4:#eda100;--grid:#e6ebf2;--axis-line:#c9d2df;--up:var(--ok);--down:var(--crit)}
+@media(prefers-color-scheme:dark){:root{--series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;--series-4:#c98500;--grid:#16325c;--axis-line:#1d3a66}}
 .viz-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:8px}
 .viz-legend span{display:inline-flex;align-items:center;gap:6px}
 .viz-legend i,.viz-tip i{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -177,3 +177,32 @@ body.lecture-seule [data-ecriture]{display:none!important}
 
 /* super admin : badge discret dans le pied de la barre latérale (entrée cachée : Ctrl+Maj+A) */
 .side-foot .who .sa-badge{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:1px 6px;width:auto}
+/* tuiles chiffrées : autant de colonnes que la largeur le permet (5 tuiles sur le tableau de bord) */
+.tiles-auto{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
+
+/* ===== location de véhicules : cartes simples, état en couleur + libellé, un bouton par carte ===== */
+.loc-chips{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.loc-chip{display:flex;align-items:center;gap:10px;padding:12px 16px}
+.loc-chip b{font-size:24px;font-weight:800}
+.loc-chip span:last-child{color:var(--muted);font-weight:600}
+.loc-chip .ic,.veh-etat{font-weight:800}
+.ic.ok,.veh-etat.ok{color:var(--ok)}.ic.info,.veh-etat.info{color:var(--info)}.ic.crit,.veh-etat.crit{color:var(--crit)}
+.ic.warn,.veh-etat.warn{color:var(--warn)}.ic.navy,.veh-etat.navy{color:var(--ink)}.ic.neutral,.veh-etat.neutral{color:var(--muted)}
+.loc-alerte{background:var(--crit-soft);color:var(--crit);border:1px solid var(--crit);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:13.5px}
+.loc-alerte div{color:var(--ink);margin-top:4px}
+.loc-h{font-size:18px;font-weight:800;margin:22px 0 10px}
+.veh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.veh{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.veh-etat{padding:10px 14px;font-size:13.5px}
+.veh-etat.ok{background:var(--ok-soft)}.veh-etat.info{background:var(--info-soft)}.veh-etat.crit{background:var(--crit-soft)}
+.veh-etat.warn{background:var(--warn-soft)}.veh-etat.navy,.veh-etat.neutral{background:var(--panel2)}
+.veh-corps{padding:14px 16px 16px;display:flex;flex-direction:column;gap:3px;flex:1}
+.veh-nom{font-size:17px;font-weight:800}
+.veh-sub{color:var(--muted);font-size:13px}
+.veh-loc{font-size:13px;font-weight:600;margin-top:6px}
+.veh-corps .btn{margin-top:auto;width:100%}
+.veh-corps > b:nth-of-type(2){margin-top:8px}
+.loc-ligne{display:flex;align-items:center;gap:14px;padding:12px 16px;margin-bottom:8px}
+.loc-txt{flex:1;display:flex;flex-direction:column}
+.loc-txt span{color:var(--muted);font-size:13px}
+.loc-act{display:flex;gap:8px;align-items:center}

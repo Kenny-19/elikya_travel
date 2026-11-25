@@ -47,6 +47,17 @@ const tables = <String, TableDef>{
     },
   ),
   'parametres': TableDef(key: 'cle'),
+  // Location de véhicules (db/location.sql)
+  'vehicules': TableDef(ts: true),
+  'locations': TableDef(
+    ts: true,
+    rels: {
+      'clients': ('clients', 'client_id'),
+      'vehicules': ('vehicules', 'vehicule_id'),
+      'devises': ('devises', 'devise_id'),
+      'users': ('users', 'agent_id'),
+    },
+  ),
 };
 
 String keyOf(String table) => tables[table]?.key ?? 'id';

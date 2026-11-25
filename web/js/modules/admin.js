@@ -13,7 +13,7 @@ Elikya.registerModule({
   superAdmin: true,   // app.js renvoie à l'accueil si le compte n'est pas super admin
   async render(root){
     var store = Elikya.data, h = Elikya.h;
-    var MODULES = [['voyage','Voyage'],['caisse','Caisse'],['momo','Mobile Money'],['fourniture','Fourniture'],['clients','Clients']];
+    var MODULES = [['voyage','Voyage'],['location','Location'],['caisse','Caisse'],['momo','Mobile Money'],['fourniture','Fourniture'],['clients','Clients']];
     var vue = 'comptes', comptes = [], roles = [];
 
     function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }

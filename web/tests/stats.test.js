@@ -78,8 +78,8 @@ test('variation en %', () => {
 
 test('série journalière par module', () => {
   const rows = S.daily(S.journal(src), ['2026-11-21', '2026-11-22']);
-  assert.deepEqual(rows[0], { jour: '2026-11-21', Voyage: 100, Fourniture: 0, 'Mobile Money': 0 });
-  assert.deepEqual(rows[1], { jour: '2026-11-22', Voyage: 520, Fourniture: 300, 'Mobile Money': 120 });
+  assert.deepEqual(rows[0], { jour: '2026-11-21', Voyage: 100, Location: 0, Fourniture: 0, 'Mobile Money': 0 });
+  assert.deepEqual(rows[1], { jour: '2026-11-22', Voyage: 520, Location: 0, Fourniture: 300, 'Mobile Money': 120 });
 });
 
 test('caisse : solde théorique des sessions ouvertes et écart de clôture', () => {
@@ -142,4 +142,49 @@ test('CA par client sur tout l historique : CDF converti, annulés exclus', () =
   const s = S.statsClients(src.dossiers, src.commandes, devises);
   assert.deepEqual(s.c1, { dossiers: 2, commandes: 0, ca: 620 });
   assert.deepEqual(s.c2, { dossiers: 1, commandes: 1, ca: 600 }); // devis 300 + commande 300 ; annulés exclus
+});
+
+test('location : jours, montant, conflits, état (mêmes règles que l’app)', () => {
+  const v = { id: 'v1', tarif_jour: 80, tarif_chauffeur_jour: 25, statut: 'disponible' };
+  const locs = [
+    { id: 'l1', vehicule_id: 'v1', date_debut: '2026-11-20', date_fin: '2026-11-24', statut: 'en_cours' },
+    { id: 'l2', vehicule_id: 'v1', date_debut: '2026-12-01', date_fin: '2026-12-03', statut: 'reservee' },
+    { id: 'l3', vehicule_id: 'v1', date_debut: '2026-11-26', date_fin: '2026-11-28', statut: 'annulee' },
+  ];
+  assert.equal(S.locJours('2026-11-01', '2026-11-03'), 3);
+  assert.equal(S.locJours('2026-12-30', '2027-01-02'), 4);
+  assert.equal(S.locMontant(v, '2026-11-01', '2026-11-03', true), 315);
+  assert.equal(S.locConflit(locs, 'v1', '2026-11-24', '2026-11-25').id, 'l1');
+  assert.equal(S.locConflit(locs, 'v1', '2026-11-25', '2026-11-30'), null);
+  assert.equal(S.locConflit(locs, 'v1', '2026-12-01', '2026-12-02', 'l2'), null);
+  assert.equal(S.locEtat(v, locs, '2026-11-22').libelle, 'Loué jusqu’au 24/11');
+  assert.equal(S.locEtat(v, locs, '2026-11-26').code, 'retard');
+  const rendu = locs.map((l) => (l.id === 'l1' ? { ...l, statut: 'terminee' } : l));
+  assert.equal(S.locEtat(v, rendu, '2026-11-26').libelle, 'Libre · réservé dès le 01/12');
+  assert.equal(S.locEtat({ ...v, statut: 'entretien' }, locs, '2026-11-22').code, 'entretien');
+  assert.equal(S.locEtat(v, rendu, '2026-12-01').code, 'a_remettre', 'réservé, départ aujourd’hui');
+});
+
+test('location dans le journal : annulées exclues, CDF converti, client compté', () => {
+  const e = S.journal({
+    devises,
+    locations: [
+      { id: 'L1', ref: 'LOC-1', client_id: 'c9', agent_id: 'u1', montant: 315, devise_id: 1, statut: 'en_cours', cree_le: iso(2026, 11, 22) },
+      { id: 'L2', ref: 'LOC-2', client_id: 'c9', agent_id: 'u1', montant: 280000, devise_id: 2, statut: 'reservee', cree_le: iso(2026, 11, 22) },
+      { id: 'L3', ref: 'LOC-3', client_id: 'c9', agent_id: 'u1', montant: 999, devise_id: 1, statut: 'annulee', cree_le: iso(2026, 11, 22) },
+    ],
+  });
+  const t = S.totals(e, new Date(2026, 10, 22), new Date(2026, 10, 22));
+  assert.equal(t['Location'], 415);
+  assert.equal(t.nb['Location'], 2);
+  assert.deepEqual(S.topClients(e, [{ id: 'c9', nom: 'Kamoa' }]).map((c) => c.ca), [415]);
+  assert.deepEqual(S.MODULES, ['Voyage', 'Location', 'Fourniture', 'Mobile Money']);
+});
+
+test('alerte : véhicule non rendu', () => {
+  const a = S.alertes({ locations: [
+    { ref: 'LOC-7', statut: 'en_cours', date_debut: '2026-11-18', date_fin: '2026-11-20' },
+    { ref: 'LOC-8', statut: 'en_cours', date_debut: '2026-11-20', date_fin: '2026-11-25' },
+  ] }, NOW);
+  assert.deepEqual(a.map((x) => [x.niveau, x.texte]), [['crit', 'Véhicule non rendu : LOC-7 (retour prévu le 20/11/2026)']]);
 });

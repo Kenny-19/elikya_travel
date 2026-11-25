@@ -6,7 +6,7 @@
      - Mobile Money= transactions réussies (volume) ; frais = commissions
      - Caisse      = mouvements entrées / sorties ; solde théorique des sessions ouvertes */
 (function(root){
-  var MODULES = ['Voyage','Fourniture','Mobile Money'];
+  var MODULES = ['Voyage','Location','Fourniture','Mobile Money'];
 
   function num(v){ var n = Number(v); return isFinite(n) ? n : 0; }
   function round2(n){ return Math.round(n*100)/100; }
@@ -74,6 +74,11 @@
       out.push({ jour:dayKey(c.cree_le), module:'Fourniture', montant:num(c.total), frais:0,
                  client_id:c.client_id, agent_id:null, ref:c.ref });
     });
+    (src.locations||[]).forEach(function(l){
+      if(l.statut === 'annulee') return;
+      out.push({ jour:dayKey(l.cree_le), module:'Location', montant:toUsd(l.montant, l.devise_id, taux), frais:0,
+                 client_id:l.client_id, agent_id:l.agent_id, ref:l.ref });
+    });
     (src.momo_transactions||[]).forEach(function(t){
       if(t.statut !== 'reussi') return;
       out.push({ jour:dayKey(t.cree_le), module:'Mobile Money', montant:num(t.montant), frais:num(t.frais),
@@ -86,7 +91,8 @@
 
   /** Totaux par module sur [from, to] : {Voyage, Fourniture, 'Mobile Money', frais, nb:{...}} */
   function totals(entries, from, to){
-    var t = { 'Voyage':0, 'Fourniture':0, 'Mobile Money':0, frais:0, nb:{ 'Voyage':0, 'Fourniture':0, 'Mobile Money':0 } };
+    var t = { frais:0, nb:{} };
+    MODULES.forEach(function(m){ t[m] = 0; t.nb[m] = 0; });
     entries.forEach(function(e){
       if(!e.jour || !inRange(e.jour, from, to)) return;
       t[e.module] += e.montant; t.nb[e.module]++; t.frais += e.frais;
@@ -151,6 +157,10 @@
         out.push({ niveau: c.ecart < 0 ? 'crit' : 'warn', module:'Caisse',
           texte:(c.ecart < 0 ? 'Manquant de ' : 'Excédent de ')+Math.abs(c.ecart).toLocaleString('fr-FR')+' $ à la clôture du '+frDate(c.session.jour) });
     });
+    (src.locations||[]).forEach(function(l){
+      if(locEnRetard(l, today)) out.push({ niveau:'crit', module:'Location',
+        texte:'Véhicule non rendu : '+(l.ref||'location')+' (retour prévu le '+frDate(l.date_fin)+')' });
+    });
     var aLivrer = (src.commandes||[]).filter(function(c){ return c.statut === 'a_livrer'; }).length;
     if(aLivrer) out.push({ niveau:'info', module:'Fourniture', texte: aLivrer+' commande(s) à livrer' });
     var devis = (src.dossiers||[]).filter(function(d){ return d.statut === 'devis' || d.statut === 'en_cours'; }).length;
@@ -206,6 +216,45 @@
     return out;
   }
 
+  // ----- Location de véhicules (mêmes règles que agents/lib/data/location_logic.dart) -----
+  var LOC_ACTIFS = { reservee:true, en_cours:true };
+  /** Jours facturés : départ et retour inclus (du 1er au 3 = 3 jours), minimum 1. */
+  function locJours(debut, fin){
+    var a = Date.UTC(+debut.slice(0,4), +debut.slice(5,7)-1, +debut.slice(8,10));
+    var b = Date.UTC(+fin.slice(0,4), +fin.slice(5,7)-1, +fin.slice(8,10));
+    return Math.max(1, Math.round((b - a) / 864e5) + 1);
+  }
+  /** Montant proposé (USD) : jours × (tarif véhicule + supplément chauffeur). */
+  function locMontant(v, debut, fin, avecChauffeur){
+    return locJours(debut, fin) * (num(v.tarif_jour) + (avecChauffeur ? num(v.tarif_chauffeur_jour) : 0));
+  }
+  /** Première location active du véhicule qui chevauche [debut, fin] (bornes incluses), ou null. */
+  function locConflit(locations, vehiculeId, debut, fin, saufId){
+    return (locations||[]).filter(function(l){
+      return String(l.vehicule_id) === String(vehiculeId) && LOC_ACTIFS[l.statut] && (saufId == null || String(l.id) !== String(saufId))
+        && debut <= l.date_fin && fin >= l.date_debut;
+    })[0] || null;
+  }
+  function locEnRetard(l, today){ return l.statut === 'en_cours' && l.date_fin < today; }
+  /** État du véhicule à une date : {code, libelle, location} */
+  function locEtat(v, locations, today){
+    if(v.statut === 'entretien') return { code:'entretien', libelle:'En entretien' };
+    if(v.statut === 'hors_service') return { code:'hors_service', libelle:'Hors service' };
+    var court = function(k){ return k.slice(8)+'/'+k.slice(5,7); };
+    var actives = (locations||[]).filter(function(l){ return String(l.vehicule_id) === String(v.id) && LOC_ACTIFS[l.statut]; })
+      .sort(function(a, b){ return a.date_debut < b.date_debut ? -1 : 1; });
+    for(var i = 0; i < actives.length; i++){
+      var l = actives[i];
+      if(locEnRetard(l, today)) return { code:'retard', libelle:'Retour en retard (prévu le '+court(l.date_fin)+')', location:l };
+      if(l.statut === 'en_cours') return { code:'loue', libelle:'Loué jusqu’au '+court(l.date_fin), location:l };
+      // réservé et la date de départ est arrivée : le client vient chercher le véhicule
+      if(l.date_debut <= today && l.date_fin >= today) return { code:'a_remettre', libelle:'Clés à remettre (réservé)', location:l };
+    }
+    var next = actives.filter(function(l){ return l.date_debut > today; })[0];
+    if(next) return { code:'reserve_plus_tard', libelle:'Libre · réservé dès le '+court(next.date_debut), location:next };
+    return { code:'disponible', libelle:'Disponible' };
+  }
+
   /** CSV compatible Excel FR (séparateur « ; », décimales « , »). cols : [{key, label}] */
   function toCsv(rows, cols){
     function cell(v){
@@ -232,7 +281,8 @@
 
   var api = { MODULES:MODULES, dayKey:dayKey, periodRange:periodRange, monthRange:monthRange, journal:journal,
     totals:totals, delta:delta, frDate:frDate, daily:daily, caisse:caisse, alertes:alertes, parAgent:parAgent,
-    topClients:topClients, reservations:reservations, statsClients:statsClients, toCsv:toCsv, niceTicks:niceTicks, toUsd:toUsd, tauxMap:tauxMap };
+    topClients:topClients, reservations:reservations, statsClients:statsClients, toCsv:toCsv,
+    locJours:locJours, locMontant:locMontant, locConflit:locConflit, locEtat:locEtat, locEnRetard:locEnRetard, niceTicks:niceTicks, toUsd:toUsd, tauxMap:tauxMap };
   if(typeof module !== 'undefined' && module.exports) module.exports = api;
   if(root && root.Elikya) root.Elikya.stats = api;
 })(typeof window !== 'undefined' ? window : null);
