@@ -102,7 +102,7 @@ test('alertes triées par gravité', () => {
   assert.ok(!textes.some((t) => t.includes('22/11/2026 non clôturée')), 'la session du jour n est pas en retard');
   assert.ok(textes.some((t) => t.startsWith('Manquant de 10')));
   assert.ok(textes.includes('1 commande(s) à livrer'));
-  assert.ok(textes.includes('1 dossier(s) en devis ou en cours'));
+  assert.ok(textes.includes('1 devis à relancer'));
   const rank = { crit: 0, warn: 1, info: 2 };
   for (let i = 1; i < a.length; i++) assert.ok(rank[a[i - 1].niveau] <= rank[a[i].niveau]);
 });
@@ -187,4 +187,30 @@ test('alerte : véhicule non rendu', () => {
     { ref: 'LOC-8', statut: 'en_cours', date_debut: '2026-11-20', date_fin: '2026-11-25' },
   ] }, NOW);
   assert.deepEqual(a.map((x) => [x.niveau, x.texte]), [['crit', 'Véhicule non rendu : LOC-7 (retour prévu le 20/11/2026)']]);
+});
+
+test('voyage : paiements (mêmes règles que l’app)', () => {
+  const d = { id: 'd1', montant: 500, devise_id: 1, statut: 'confirme' };
+  assert.equal(S.voyPaiement(d, [], devises).code, 'non_paye');
+  const e = S.voyPaiement(d, [{ montant: 200, devise_id: 1 }, { montant: 280000, devise_id: 2 }], devises);
+  assert.deepEqual([e.code, e.paye, e.reste, e.libelle], ['acompte', 300, 200, 'Acompte']);
+  assert.equal(S.voyPaiement(d, [{ montant: 500, devise_id: 1 }], devises).code, 'solde');
+  assert.equal(S.voyPaiement({ ...d, statut: 'paye' }, [], devises).code, 'solde', 'ancien dossier « payé »');
+  const cdf = S.voyPaiement({ montant: 1400000, devise_id: 2, statut: 'confirme' }, [{ montant: 250, devise_id: 1 }], devises);
+  assert.deepEqual([cdf.paye, cdf.reste], [700000, 700000]);
+  assert.equal(S.voyAvancement({ statut: 'en_cours' }), 'confirme');
+  assert.equal(S.voyPaiementsDe([{ source_type: 'dossier', source_id: 'd1' }, { source_type: 'commande', source_id: 'd1' }], 'd1').length, 1);
+});
+
+test('alerte : départ proche pas soldé', () => {
+  const a = S.alertes({
+    devises,
+    departs: [
+      { id: 'd1', ref: 'ELK-1', statut: 'confirme', date_depart: '2026-11-24', montant: 500, devise_id: 1, clients: { nom: 'Patrick' } },
+      { id: 'd2', ref: 'ELK-2', statut: 'confirme', date_depart: '2026-11-24', montant: 100, devise_id: 1 },
+      { id: 'd3', ref: 'ELK-3', statut: 'annule', date_depart: '2026-11-24', montant: 100, devise_id: 1 },
+    ],
+    paiements: [{ source_type: 'dossier', source_id: 'd1', montant: 200, devise_id: 1 }, { source_type: 'dossier', source_id: 'd2', montant: 100, devise_id: 1 }],
+  }, NOW);
+  assert.deepEqual(a.map((x) => x.texte), ['Départ le 24/11/2026 pas soldé : ELK-1 (Patrick) — reste 300 $']);
 });

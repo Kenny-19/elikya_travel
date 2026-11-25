@@ -192,18 +192,18 @@ class _LocationPageState extends State<LocationPage> {
           spacing: 12,
           runSpacing: 12,
           children: [
-            _Compteur(Icons.check_circle, Elk.ok, '$libres', libres > 1 ? 'disponibles' : 'disponible'),
+            Compteur(Icons.check_circle, Elk.ok, '$libres', libres > 1 ? 'disponibles' : 'disponible'),
             if (nb('loue') + nb('retard') > 0)
-              _Compteur(Icons.vpn_key, Elk.info, '${nb('loue') + nb('retard')}', 'en location'),
+              Compteur(Icons.vpn_key, Elk.info, '${nb('loue') + nb('retard')}', 'en location'),
             if (nb('a_remettre') > 0)
-              _Compteur(Icons.event_available, Elk.navy2, '${nb('a_remettre')}', 'clés à remettre'),
-            if (aRendre > 0) _Compteur(Icons.event, Elk.navy2, '$aRendre', 'à rendre aujourd’hui'),
-            if (retards.isNotEmpty) _Compteur(Icons.warning_amber_rounded, Elk.crit, '${retards.length}', 'en retard'),
+              Compteur(Icons.event_available, Elk.navy2, '${nb('a_remettre')}', 'clés à remettre'),
+            if (aRendre > 0) Compteur(Icons.event, Elk.navy2, '$aRendre', 'à rendre aujourd’hui'),
+            if (retards.isNotEmpty) Compteur(Icons.warning_amber_rounded, Elk.crit, '${retards.length}', 'en retard'),
           ],
         ),
         if (retards.isNotEmpty) ...[
           const SizedBox(height: 14),
-          _Bandeau(
+          Bandeau(
             couleur: Elk.crit,
             icone: Icons.warning_amber_rounded,
             texte: retards.length == 1
@@ -222,7 +222,7 @@ class _LocationPageState extends State<LocationPage> {
             child: Text('Erreur : $error', style: const TextStyle(color: Elk.crit)),
           ),
         const SizedBox(height: 22),
-        const _Titre('Nos véhicules'),
+        const TitreSection('Nos véhicules'),
         const SizedBox(height: 10),
         if (loading)
           const Padding(
@@ -230,7 +230,7 @@ class _LocationPageState extends State<LocationPage> {
             child: Center(child: CircularProgressIndicator()),
           )
         else if (vehicules.isEmpty)
-          _Vide(
+          EtatVide(
             icone: Icons.directions_car_outlined,
             texte: 'Aucun véhicule pour l’instant.',
             bouton: FilledButton.icon(
@@ -260,7 +260,7 @@ class _LocationPageState extends State<LocationPage> {
         const SizedBox(height: 26),
         Row(
           children: [
-            const _Titre('Locations en cours et à venir'),
+            const TitreSection('Locations en cours et à venir'),
             const Spacer(),
             if (vehicules.isNotEmpty)
               FilledButton.icon(
@@ -272,7 +272,7 @@ class _LocationPageState extends State<LocationPage> {
         ),
         const SizedBox(height: 10),
         if (!loading && aVenir.isEmpty)
-          const _Vide(icone: Icons.event_available, texte: 'Aucune location en cours ni à venir.')
+          const EtatVide(icone: Icons.event_available, texte: 'Aucune location en cours ni à venir.')
         else
           for (final l in aVenir)
             _LigneLocation(
@@ -297,100 +297,6 @@ class _LocationPageState extends State<LocationPage> {
   }
 }
 
-// ------------------------------------------------------------------ petits éléments
-class _Titre extends StatelessWidget {
-  const _Titre(this.texte);
-  final String texte;
-  @override
-  Widget build(BuildContext context) => Text(texte, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800));
-}
-
-class _Compteur extends StatelessWidget {
-  const _Compteur(this.icone, this.couleur, this.valeur, this.libelle);
-  final IconData icone;
-  final Color couleur;
-  final String valeur, libelle;
-  @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icone, color: couleur, size: 26),
-          const SizedBox(width: 12),
-          Text(valeur, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
-          const SizedBox(width: 8),
-          Text(
-            libelle,
-            style: TextStyle(color: Theme.of(context).hintColor, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _Bandeau extends StatelessWidget {
-  const _Bandeau({required this.couleur, required this.icone, required this.texte, this.details = const []});
-  final Color couleur;
-  final IconData icone;
-  final String texte;
-  final List<String> details;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: couleur.withValues(alpha: .08),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: couleur.withValues(alpha: .35)),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icone, color: couleur),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                texte,
-                style: TextStyle(color: couleur, fontWeight: FontWeight.w800),
-              ),
-              for (final d in details) Padding(padding: const EdgeInsets.only(top: 4), child: Text(d)),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _Vide extends StatelessWidget {
-  const _Vide({required this.icone, required this.texte, this.bouton});
-  final IconData icone;
-  final String texte;
-  final Widget? bouton;
-  @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(28),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(icone, size: 40, color: Theme.of(context).hintColor),
-            const SizedBox(height: 10),
-            Text(texte, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 15)),
-            if (bouton != null) ...[const SizedBox(height: 14), bouton!],
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-/// Carte d'un véhicule : état en couleur + UN bouton principal adapté à la situation.
 class _CarteVehicule extends StatelessWidget {
   const _CarteVehicule({
     required this.vehicule,
@@ -745,7 +651,7 @@ class _LouerDialogState extends State<_LouerDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Etape('1', 'Véhicule'),
+              Etape('1', 'Véhicule'),
               dropdown<Object?>(
                 'Véhicule',
                 vehiculeId,
@@ -760,7 +666,7 @@ class _LouerDialogState extends State<_LouerDialog> {
                 }),
               ),
               const SizedBox(height: 16),
-              _Etape('2', 'Client'),
+              Etape('2', 'Client'),
               Row(
                 children: [
                   Expanded(
@@ -779,7 +685,7 @@ class _LouerDialogState extends State<_LouerDialog> {
                 ],
               ),
               const SizedBox(height: 16),
-              _Etape('3', 'Dates'),
+              Etape('3', 'Dates'),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
@@ -801,7 +707,7 @@ class _LouerDialogState extends State<_LouerDialog> {
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
               const SizedBox(height: 8),
-              _Etape('4', 'Chauffeur'),
+              Etape('4', 'Chauffeur'),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: chauffeur,
@@ -897,29 +803,6 @@ class _LouerDialogState extends State<_LouerDialog> {
       ],
     );
   }
-}
-
-class _Etape extends StatelessWidget {
-  const _Etape(this.numero, this.titre);
-  final String numero, titre;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      children: [
-        CircleAvatar(
-          radius: 11,
-          backgroundColor: Elk.navy,
-          child: Text(
-            numero,
-            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(titre, style: const TextStyle(fontWeight: FontWeight.w800)),
-      ],
-    ),
-  );
 }
 
 // ------------------------------------------------------------------ véhicule

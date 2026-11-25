@@ -151,3 +151,120 @@ Widget formGrid(List<Widget> fields) =>
 void toast(BuildContext context, String message) => ScaffoldMessenger.of(context)
   ..hideCurrentSnackBar() // le nouveau message remplace l'ancien tout de suite
   ..showSnackBar(SnackBar(content: Text(message)));
+
+// ------------------------------------------------------------------ éléments « simples » (Location, Voyage…)
+class TitreSection extends StatelessWidget {
+  const TitreSection(this.texte, {super.key});
+  final String texte;
+  @override
+  Widget build(BuildContext context) => Text(texte, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800));
+}
+
+class Compteur extends StatelessWidget {
+  const Compteur(this.icone, this.couleur, this.valeur, this.libelle, {super.key});
+  final IconData icone;
+  final Color couleur;
+  final String valeur, libelle;
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icone, color: couleur, size: 26),
+          const SizedBox(width: 12),
+          Text(valeur, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+          const SizedBox(width: 8),
+          Text(
+            libelle,
+            style: TextStyle(color: Theme.of(context).hintColor, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class Bandeau extends StatelessWidget {
+  const Bandeau({super.key, required this.couleur, required this.icone, required this.texte, this.details = const []});
+  final Color couleur;
+  final IconData icone;
+  final String texte;
+  final List<String> details;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: couleur.withValues(alpha: .08),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: couleur.withValues(alpha: .35)),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icone, color: couleur),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                texte,
+                style: TextStyle(color: couleur, fontWeight: FontWeight.w800),
+              ),
+              for (final d in details) Padding(padding: const EdgeInsets.only(top: 4), child: Text(d)),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class EtatVide extends StatelessWidget {
+  const EtatVide({super.key, required this.icone, required this.texte, this.bouton});
+  final IconData icone;
+  final String texte;
+  final Widget? bouton;
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icone, size: 40, color: Theme.of(context).hintColor),
+            const SizedBox(height: 10),
+            Text(texte, style: TextStyle(color: Theme.of(context).hintColor, fontSize: 15)),
+            if (bouton != null) ...[const SizedBox(height: 14), bouton!],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// Carte d'un véhicule : état en couleur + UN bouton principal adapté à la situation.
+class Etape extends StatelessWidget {
+  const Etape(this.numero, this.titre, {super.key});
+  final String numero, titre;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 11,
+          backgroundColor: Elk.navy,
+          child: Text(
+            numero,
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(titre, style: const TextStyle(fontWeight: FontWeight.w800)),
+      ],
+    ),
+  );
+}

@@ -42,6 +42,7 @@ docs/                   architecture.md, roadmap.md
 - ✅ Site : tableau de bord + rapports mensuels (export Excel, impression PDF)
 - ✅ Super admin : entrée cachée du site pour créer les comptes agents et gérer les rôles (`docs/super-admin.md`)
 - ✅ Location de véhicules (app agents + site + tableau de bord) : lancer `db/location.sql` dans Supabase
+- ✅ Voyage complété (paiements, dates, détails, étapes visa) : lancer `db/voyage.sql` dans Supabase
 - ✅ Site en ligne : https://elikya0travel.netlify.app (mises à jour : `git push`, voir `docs/mise-en-ligne.md`) 
 - ✅ Installeur Windows de l'app agents : `node scripts/build-installer.js` (voir `agents/README.md`)
 

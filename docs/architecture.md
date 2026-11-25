@@ -117,3 +117,18 @@ test/                      tests de la logique hors ligne + des rôles
 - Interface pensée « très simple » : une carte par véhicule, état en couleur + libellé, un seul
   gros bouton (Louer · Remettre les clés · Véhicule rendu) ; louer = client + calendrier + interrupteur
   chauffeur, total calculé, options repliées.
+
+## Voyage complété (`db/voyage.sql`)
+- **Avancement** (Devis → Confirmé → Voyage effectué, ou Annulé) séparé du **paiement**, calculé à
+  partir des encaissements (`paiements`, source_type `dossier`) : Non payé / Acompte / Soldé / Trop
+  perçu + reste à payer, encaissements convertis dans la devise du dossier. Les anciens statuts
+  « payé » / « en cours » restent lisibles (payé sans encaissement = soldé).
+- **Encaisser** : montant proposé = reste ; espèces / mobile money (n° de transaction) / banque.
+  Si espèces et caisse du jour ouverte (droit caisse) → case « Ajouter aussi à ma caisse du jour »
+  qui crée le mouvement de caisse lié (`source_type = 'paiement'`) : plus de double saisie.
+- Détails selon le service : billet (trajet, compagnie, PNR, départ / retour ou aller simple), visa
+  (pays, étapes À déposer → Déposé → En traitement → Obtenu / Refusé), hôtel (hôtel, ville,
+  arrivée / départ), voyageur s'il n'est pas le client.
+- Alertes : départ dans les 3 jours pas soldé (app, site, tableau de bord) ; devis à relancer.
+- Droits : les encaissements sont visibles / saisissables par voyage, caisse, fourniture et location ;
+  correction réservée à la direction.

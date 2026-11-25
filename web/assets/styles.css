@@ -206,3 +206,18 @@ body.lecture-seule [data-ecriture]{display:none!important}
 .loc-txt{flex:1;display:flex;flex-direction:column}
 .loc-txt span{color:var(--muted);font-size:13px}
 .loc-act{display:flex;gap:8px;align-items:center}
+
+/* ===== voyage : une ligne par dossier, barre « payé / reste » ===== */
+.voy-ligne{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:10px}
+.voy-ic{width:40px;height:40px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-size:18px;flex:none}
+.voy-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.voy-txt b{font-size:15px;font-weight:800}
+.voy-ou{font-weight:600}
+.voy-det{color:var(--muted);font-size:13px}
+.voy-paie{width:210px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.voy-paie b{font-size:16px;font-weight:800}
+.voy-paie .meter{width:100%;margin:0}
+.voy-paie span{color:var(--muted);font-size:12px}
+.voy-act{width:130px;text-align:right;flex:none}
+.meter.voy-ok b{background:var(--ok)}.meter.voy-warn b{background:var(--warn)}.meter.voy-crit b{background:var(--crit)}
+@media(max-width:820px){.voy-ligne{flex-wrap:wrap}.voy-paie{width:100%;align-items:flex-start}.voy-act{width:auto}}

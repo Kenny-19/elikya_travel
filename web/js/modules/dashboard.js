@@ -74,9 +74,11 @@ Elikya.registerModule({
         store.select('momo_transactions', { eq:{ statut:'en_attente' } }),
         store.select('commandes', { eq:{ statut:'a_livrer' } }),
         store.select('dossiers', { eq:{ statut:'devis' } }),
-        store.select('dossiers', { eq:{ statut:'en_cours' } }),
+        // départs dans les 3 jours (pour l'alerte « pas soldé »)
+        store.select('dossiers', { embed:['clients(nom)'], gte:{ date_depart:S.dayKey(new Date()) }, lte:{ date_depart:S.dayKey(new Date(Date.now() + 3*864e5)) } }),
         store.select('locations', since),                                   // r[12]
-        store.select('locations', { eq:{ statut:'en_cours' } })             // r[13] : retours en retard
+        store.select('locations', { eq:{ statut:'en_cours' } }),            // r[13] : retours en retard
+        store.select('paiements', { eq:{ source_type:'dossier' }, limit:3000 })  // r[14]
       ]);
       var err = r.filter(function(x){ return x.error; })[0];
       var devises = r[0].data||[], sessions = r[4].data||[];
@@ -111,7 +113,7 @@ Elikya.registerModule({
       var al = S.alertes({
         devises:devises, produits:r[5].data||[], caisse_sessions:utiles, mouvements_caisse:mouvements,
         momo_transactions: (r[8].data||[]).concat(periodTx.filter(function(t){ return t.statut === 'echec'; })),
-        commandes: r[9].data||[], dossiers: (r[10].data||[]).concat(r[11].data||[]), locations: r[13].data||[]
+        commandes: r[9].data||[], dossiers: r[10].data||[], departs: r[11].data||[], paiements: r[14].data||[], locations: r[13].data||[]
       });
       var ICON = { crit:['Urgent','crit'], warn:['À voir','warn'], info:['Info','info'] };
       $('#alerts').innerHTML = al.length ? al.map(function(a){

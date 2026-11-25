@@ -68,7 +68,7 @@ void main() {
     );
     expect(find.text('Mobile Money'), findsNothing);
     expect(find.text('Fourniture'), findsOneWidget);
-    expect(find.text('ELK-2041'), findsOneWidget);
+    expect(find.textContaining('ELK-2041'), findsOneWidget);
     expect(find.text('Confirmé'), findsOneWidget);
     await data.local.close();
   });

@@ -163,8 +163,15 @@
     });
     var aLivrer = (src.commandes||[]).filter(function(c){ return c.statut === 'a_livrer'; }).length;
     if(aLivrer) out.push({ niveau:'info', module:'Fourniture', texte: aLivrer+' commande(s) à livrer' });
-    var devis = (src.dossiers||[]).filter(function(d){ return d.statut === 'devis' || d.statut === 'en_cours'; }).length;
-    if(devis) out.push({ niveau:'info', module:'Voyage', texte: devis+' dossier(s) en devis ou en cours' });
+    var devis = (src.dossiers||[]).filter(function(d){ return d.statut === 'devis'; }).length;
+    if(devis) out.push({ niveau:'info', module:'Voyage', texte: devis+' devis à relancer' });
+    // départs dans les 3 jours pas encore soldés (src.departs + src.paiements)
+    (src.departs||[]).forEach(function(d){
+      var a = voyAvancement(d); if(a !== 'devis' && a !== 'confirme') return;
+      var p = voyPaiement(d, voyPaiementsDe(src.paiements, d.id), src.devises);
+      if(p.reste > 0) out.push({ niveau:'crit', module:'Voyage',
+        texte:'Départ le '+frDate(d.date_depart)+' pas soldé : '+(d.ref||'dossier')+(d.clients && d.clients.nom ? ' ('+d.clients.nom+')' : '')+' — reste '+p.reste.toLocaleString('fr-FR')+(((src.devises||[]).filter(function(x){ return String(x.id) === String(d.devise_id); })[0] || {}).code === 'CDF' ? ' FC' : ' $') });
+    });
     var rank = { crit:0, warn:1, info:2 };
     return out.sort(function(a, b){ return rank[a.niveau] - rank[b.niveau]; });
   }
@@ -214,6 +221,27 @@
     (commandes||[]).forEach(function(c){ if(c.statut === 'annulee') return; var r = row(c.client_id); r.commandes++; r.ca += num(c.total); });
     Object.keys(out).forEach(function(k){ out[k].ca = round2(out[k].ca); });
     return out;
+  }
+
+  // ----- Voyage : avancement et paiements (mêmes règles que agents/lib/data/voyage_logic.dart) -----
+  /** Avancement du dossier, indépendant du paiement ('paye' / 'en_cours' anciens → 'confirme'). */
+  function voyAvancement(d){ return d.statut === 'devis' || d.statut === 'termine' || d.statut === 'annule' ? d.statut : 'confirme'; }
+  /** Encaissements d'un dossier (ou d'une location : type 'location'). */
+  function voyPaiementsDe(paiements, id, type){ return (paiements||[]).filter(function(p){ return p.source_type === (type||'dossier') && String(p.source_id) === String(id); }); }
+  /** {code, paye, reste, libelle} — encaissements convertis dans la devise du dossier. */
+  function voyPaiement(d, pDossier, devises){
+    var total = num(d.montant), taux = tauxMap(devises);
+    var lib = { sans_montant:'Sans montant', non_paye:'Non payé', acompte:'Acompte', solde:'Soldé', trop_percu:'Trop perçu' };
+    function r(code, paye, reste){ return { code:code, paye:paye, reste:reste, libelle:lib[code] }; }
+    if(total <= 0) return r('sans_montant', 0, 0);
+    if(!(pDossier||[]).length && d.statut === 'paye') return r('solde', total, 0);
+    var tD = taux[String(d.devise_id)] || 1;
+    var paye = round2((pDossier||[]).reduce(function(s, p){ return s + num(p.montant) / (taux[String(p.devise_id)] || 1) * tD; }, 0));
+    var reste = round2(total - paye);
+    if(paye <= 0.004) return r('non_paye', 0, total);
+    if(reste > 0.004) return r('acompte', paye, reste);
+    if(reste < -0.004) return r('trop_percu', paye, 0);
+    return r('solde', paye, 0);
   }
 
   // ----- Location de véhicules (mêmes règles que agents/lib/data/location_logic.dart) -----
@@ -282,6 +310,7 @@
   var api = { MODULES:MODULES, dayKey:dayKey, periodRange:periodRange, monthRange:monthRange, journal:journal,
     totals:totals, delta:delta, frDate:frDate, daily:daily, caisse:caisse, alertes:alertes, parAgent:parAgent,
     topClients:topClients, reservations:reservations, statsClients:statsClients, toCsv:toCsv,
+    voyAvancement:voyAvancement, voyPaiementsDe:voyPaiementsDe, voyPaiement:voyPaiement,
     locJours:locJours, locMontant:locMontant, locConflit:locConflit, locEtat:locEtat, locEnRetard:locEnRetard, niceTicks:niceTicks, toUsd:toUsd, tauxMap:tauxMap };
   if(typeof module !== 'undefined' && module.exports) module.exports = api;
   if(root && root.Elikya) root.Elikya.stats = api;
