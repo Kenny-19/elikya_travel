@@ -18,7 +18,7 @@ base en ligne Supabase prioritaire, base locale en secours. Détails dans `archi
 | 10c | Site direction en **lecture seule** (consultation ; saisie dans l'app agents) | ✅ fait |
 | 10d | **Super admin** : entrée cachée du site (comptes agents, rôles, saisie) — `db/superadmin.sql` + Edge Function `admin-comptes` | ✅ installé (SQL + fonction déployée, refus vérifiés) |
 | 10e | **Location de véhicules** (avec ou sans chauffeur) : parc, locations, anti-double réservation en base, états du jour, retards ; app agents (cartes simples, 1 bouton) + site + tableau de bord / rapports — `db/location.sql` | ✅ installé (tables + RLS vérifiées) |
-| 10f | **Voyage complété** : encaissements (acompte / solde / reste, ajout à la caisse du jour), dates départ-retour, compagnie / PNR, pays + étapes visa, voyageur ; alertes départs non soldés ; écran simplifié (app + site) — `db/voyage.sql` | ✅ codé — à installer (lancer `db/voyage.sql`) |
+| 10f | **Voyage complété** : encaissements (acompte / solde / reste, ajout à la caisse du jour), dates départ-retour, compagnie / PNR, pays + étapes visa, voyageur ; alertes départs non soldés ; écran simplifié (app + site) — `db/voyage.sql` | ✅ installé (colonnes + RLS vérifiées) |
 | 10b | Site : **Fourniture** (catalogue, réservé/disponible, commandes) et **Clients** (fiches, CA cumulé) | ✅ fait |
 | 11 | Mise en ligne du **site** : https://elikya0travel.netlify.app (en-têtes de sécurité vérifiés) ; code sur GitHub `Kenny-19/elikya_travel` ; mises à jour auto via `netlify.toml` | ✅ en ligne, mises à jour auto vérifiées |
 | 12 | **Installeur Windows** de l'app agents (NSIS, sans droits admin, runtime VC++ inclus, données conservées) : `node scripts/build-installer.js` | ✅ fait |
