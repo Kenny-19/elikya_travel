@@ -37,6 +37,7 @@ db/roles.sql            # rôles : RLS par permission + mon_profil (à lancer ap
 db/superadmin.sql       # super admin : rôle + RLS users/roles réservée (cf. docs/super-admin.md)
 db/location.sql         # location de véhicules : tables vehicules + locations, anti-chevauchement, droit « location »
 db/momo_soldes.sql      # mobile money : le solde des opérateurs suit les opérations réussies (déclencheur)
+db/stock_auto.sql       # fourniture : le stock baisse tout seul quand une commande passe « livrée » (déclencheur)
 db/voyage.sql           # voyage complété : dates, détails par service, étapes visa, encaissements (paiements)
 supabase/functions/admin-comptes/ # Edge Function : création / gestion des comptes (super admin seul)
 scripts/build-site.js   # prépare dist/site pour l'hébergeur (vérifie la clé anon, CSP) — cf. docs/mise-en-ligne.md
@@ -60,7 +61,7 @@ docs/                   # architecture.md, roadmap.md
 ```
 
 ## Comment lancer (dev)
-1. Appliquer dans Supabase (SQL Editor → Run), dans l'ordre : `db/schema.sql`, `db/roles.sql`, `db/location.sql`, `db/voyage.sql`, `db/momo_soldes.sql`, puis `db/superadmin.sql`.
+1. Appliquer dans Supabase (SQL Editor → Run), dans l'ordre : `db/schema.sql`, `db/roles.sql`, `db/location.sql`, `db/voyage.sql`, `db/momo_soldes.sql`, `db/stock_auto.sql`, puis `db/superadmin.sql`.
 2. Créer un utilisateur : Supabase → Authentication → Users → Add user (Auto Confirm), avec le
    **même e-mail** qu'une fiche `users` (ex. `dg@elikyagroup.cd` pour le site), puis relancer `db/roles.sql`.
 3. `cp web/config.example.js web/config.js` puis coller la **clé anon** (Settings → API).
@@ -88,7 +89,7 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 | Module       | Tables principales |
 |--------------|--------------------|
 | Voyage       | `dossiers` (+ dates, détails, étape visa), `paiements` (encaissements), `clients`, `devises` — règles : `web/js/stats.js` (voy*) = `agents/lib/data/voyage_logic.dart` |
-| Fourniture   | `produits`, `commandes`, `commande_lignes` |
+| Fourniture   | `produits`, `commandes`, `commande_lignes` — stock ajusté à la livraison par déclencheur (`db/stock_auto.sql`) |
 | Mobile Money | `momo_comptes`, `momo_transactions` — solde ajusté par déclencheur (`db/momo_soldes.sql`) : dépôt/transfert −, retrait + ; même règle : `effetMomo` (app) |
 | Caisse       | `caisse_sessions`, `mouvements_caisse`, `paiements` |
 | Location     | `vehicules`, `locations` (+ `clients`) — règles : `web/js/stats.js` (loc*) = `agents/lib/data/location_logic.dart` |
@@ -103,6 +104,9 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 - **Suivi only** : ne pas introduire de logique de paiement/compensation d'argent.
 - **Site = vue globale, sur téléphone ET ordinateur** : page d’accueil « Aujourd’hui » (`aujourdhui.js`). Sous 820 px la barre
   latérale devient un menu qui glisse (`.mtop` + `body.menu-ouvert`) ; aucun écran ne doit déborder en largeur. Liens internes : `<a href="#module">`.
+- **Tout est dynamique** : chiffres calculés par la base (déclencheurs) et écrans mis à jour seuls toutes les 30 s —
+  app : `Rafraichir.tick` + mixin `AutoRafraichi` (`navigation.dart`, `_load(silencieux: true)`, rien si une fenêtre est ouverte) ;
+  site : minuterie dans `app.js` (`root.rafraichir` ou bouton `#refreshBtn` du module ; rien si onglet caché / saisie en cours).
 - **Site = lecture seule** (`Elikya.readOnly`) : tout bouton / formulaire de saisie d'un module du site porte `data-ecriture` (masqué).
 - **Super admin** (`Elikya.superAdmin`, permission `admin`, un seul compte) : entrée cachée `#admin`
   (Ctrl+Maj+A ; module `admin.js` avec `hidden:true` + `superAdmin:true`), saisie réactivée.

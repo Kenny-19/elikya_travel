@@ -74,6 +74,20 @@ class FakeRemote implements Remote {
     return {...row};
   }
 
+  /// Imite le déclencheur db/stock_auto.sql : livrer une commande fait baisser le stock.
+  void _stockLivraison(JsonRow avant, JsonRow apres) {
+    final sens = apres['statut'] == 'livree' && avant['statut'] != 'livree'
+        ? -1
+        : avant['statut'] == 'livree' && apres['statut'] != 'livree'
+        ? 1
+        : 0;
+    if (sens == 0) return;
+    for (final l in _t('commande_lignes').where((l) => l['commande_id'] == apres['id'])) {
+      final pr = _t('produits').where((x) => x['id'] == l['produit_id']).firstOrNull;
+      if (pr != null) pr['stock'] = (pr['stock'] as num) + sens * (l['quantite'] as num);
+    }
+  }
+
   /// Imite le déclencheur db/momo_soldes.sql : le solde de l'opérateur suit les opérations réussies.
   void _soldeMomo(JsonRow? avant, JsonRow? apres) {
     void applique(JsonRow t, int sens) {
@@ -108,6 +122,7 @@ class FakeRemote implements Remote {
     final avant = ex == null ? null : {...ex};
     ex?.addAll(patch);
     if (table == 'momo_transactions' && ex != null) _soldeMomo(avant, ex);
+    if (table == 'commandes' && ex != null) _stockLivraison(avant!, ex);
     return ex == null ? null : {...ex};
   }
 

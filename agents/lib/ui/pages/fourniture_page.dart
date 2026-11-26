@@ -2,9 +2,9 @@
 // - s'ouvre sur les COMMANDES : chaque commande à livrer est une carte avec un gros bouton « C'est livré » ;
 // - nouvelle commande en 2 étapes (client, produits avec − / +), total calculé, alerte si le stock ne suffit pas ;
 // - STOCK : liste simple, « À recommander » en haut, bouton « Compter le stock » (inventaire).
-// Suivi uniquement. Le stock est un RELEVÉ (inventaire saisi à la main) : il n'est pas décrémenté
-// automatiquement à la livraison — on affiche ce qui est réservé par les commandes « à livrer »,
-// et donc le disponible. Montants en USD.
+// Le stock baisse tout seul quand une commande passe « livrée » (déclencheur db/stock_auto.sql) ;
+// « Compter le stock » le corrige. Disponible = stock − ce qui est réservé par les commandes « à livrer ».
+// Montants en USD.
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -60,7 +60,10 @@ class FourniturePage extends StatefulWidget {
   State<FourniturePage> createState() => _FourniturePageState();
 }
 
-class _FourniturePageState extends State<FourniturePage> {
+class _FourniturePageState extends State<FourniturePage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(silencieux: true); // mise à jour automatique (navigation.dart)
+
   String vue = 'commandes';
   bool loading = true, terminees = false;
   String? error;
@@ -74,8 +77,8 @@ class _FourniturePageState extends State<FourniturePage> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => loading = true);
+  Future<void> _load({bool silencieux = false}) async {
+    if (!silencieux) setState(() => loading = true);
     final r = await Future.wait([
       data.select('produits', const Query(orderBy: 'ref')),
       data.select('commandes', const Query(embed: ['clients(nom)'], orderBy: 'cree_le', ascending: false, limit: 300)),
@@ -168,7 +171,7 @@ class _FourniturePageState extends State<FourniturePage> {
           title: 'Fourniture',
           subtitle: vue == 'commandes'
               ? 'Les commandes des clients : notez-les, puis marquez-les livrées.'
-              : 'Ce qu’il reste en magasin. Comptez de temps en temps pour corriger.',
+              : 'Ce qu’il reste en magasin. Le stock baisse tout seul à chaque livraison.',
           actions: [
             OutlinedButton.icon(
               onPressed: _load,

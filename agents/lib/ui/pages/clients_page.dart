@@ -53,7 +53,10 @@ class ClientsPage extends StatefulWidget {
   State<ClientsPage> createState() => _ClientsPageState();
 }
 
-class _ClientsPageState extends State<ClientsPage> {
+class _ClientsPageState extends State<ClientsPage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(silencieux: true); // mise à jour automatique (navigation.dart)
+
   bool loading = true;
   String? error;
   List<JsonRow> clients = [], dossiers = [], commandes = [], devises = [];
@@ -67,8 +70,8 @@ class _ClientsPageState extends State<ClientsPage> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => loading = true);
+  Future<void> _load({bool silencieux = false}) async {
+    if (!silencieux) setState(() => loading = true);
     final p = widget.profile;
     final r = await Future.wait([
       data.select('clients', const Query(orderBy: 'nom')),

@@ -290,6 +290,40 @@ void main() {
       expect(find.textContaining('pas assez d’argent électronique'), findsOneWidget);
     });
 
+    testWidgets('mise à jour automatique : ce qu’un collègue saisit apparaît tout seul', (t) async {
+      await pump(t, MomoPage(data: data, profile: agent));
+      expect(find.text(Elk.money(2310, 'USD')), findsOneWidget);
+      // un collègue fait une opération sur un autre poste
+      remote.server['momo_comptes']!.first['solde'] = 2100;
+      remote.server['momo_transactions']!.add({
+        'id': 't9',
+        'type': 'depot',
+        'compte_id': 1,
+        'montant': 210,
+        'frais': 0,
+        'statut': 'reussi',
+        'cree_le': DateTime.now().toUtc().toIso8601String(),
+      });
+      Rafraichir.tick.value++; // le « tic » des 30 secondes
+      await t.pump();
+      expect(find.byType(CircularProgressIndicator), findsNothing, reason: 'pas de sablier pendant la mise à jour');
+      await t.pumpAndSettle();
+      expect(find.text(Elk.money(2100, 'USD')), findsOneWidget);
+      expect(find.textContaining('2 opérations ·'), findsOneWidget);
+    });
+
+    testWidgets('pas de mise à jour pendant qu’une saisie est ouverte', (t) async {
+      await pump(t, MomoPage(data: data, profile: agent));
+      await t.tap(find.text('Dépôt'));
+      await t.pumpAndSettle();
+      await fill(t, 'Montant (USD)', '50');
+      remote.server['momo_comptes']!.first['solde'] = 1;
+      Rafraichir.tick.value++;
+      await t.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget, reason: 'la fenêtre reste ouverte');
+      expect(find.text('50'), findsOneWidget, reason: 'ce qui est tapé n’est pas perdu');
+    });
+
     testWidgets('mettre à jour le solde d’un opérateur', (t) async {
       await pump(t, MomoPage(data: data, profile: agent));
       await t.tap(find.text('Mettre à jour le solde').first);

@@ -1,4 +1,6 @@
 // Coque de l'app : barre latérale (modules autorisés par le rôle) + bandeau réseau + page.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../data/data_service.dart';
@@ -20,16 +22,19 @@ class _ShellState extends State<Shell> {
   late final List<ModuleDef> allowed = modules.where((m) => m.visiblePour(widget.profile)).toList();
   int index = 0;
   int reload = 0; // incrémenté à la resynchronisation → la page relit la base en ligne
+  Timer? _horloge; // mise à jour automatique des écrans toutes les 30 s (navigation.dart : Rafraichir)
 
   @override
   void initState() {
     super.initState();
     widget.data.status.addListener(_onStatus);
     Navigation.demande.addListener(_onNavigation);
+    _horloge = Timer.periodic(const Duration(seconds: 30), (_) => Rafraichir.tick.value++);
   }
 
   @override
   void dispose() {
+    _horloge?.cancel();
     widget.data.status.removeListener(_onStatus);
     Navigation.demande.removeListener(_onNavigation);
     super.dispose();

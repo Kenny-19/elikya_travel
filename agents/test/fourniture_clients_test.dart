@@ -217,6 +217,11 @@ void main() {
       await t.pumpAndSettle();
       expect(remote.server['commandes']!.first['statut'], 'livree');
       expect(find.text('Aucune commande à livrer. Tout est à jour !'), findsOneWidget);
+      // le stock baisse tout seul : 25 tuyaux livrés (240 → 215)
+      expect(remote.server['produits']!.firstWhere((p) => p['id'] == 'p1')['stock'], 215);
+      await t.tap(find.text('Stock'));
+      await t.pumpAndSettle();
+      expect(find.text('Disponible : 215'), findsOneWidget, reason: 'plus réservé, et sorti du stock');
     });
 
     testWidgets('annuler une commande demande confirmation', (t) async {

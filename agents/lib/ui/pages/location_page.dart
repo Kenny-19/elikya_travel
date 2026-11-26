@@ -39,7 +39,10 @@ class LocationPage extends StatefulWidget {
   State<LocationPage> createState() => _LocationPageState();
 }
 
-class _LocationPageState extends State<LocationPage> {
+class _LocationPageState extends State<LocationPage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(silencieux: true); // mise à jour automatique (navigation.dart)
+
   bool loading = true;
   String? error;
   List<JsonRow> vehicules = [], locations = [], clients = [], devises = [];
@@ -54,8 +57,8 @@ class _LocationPageState extends State<LocationPage> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => loading = true);
+  Future<void> _load({bool silencieux = false}) async {
+    if (!silencieux) setState(() => loading = true);
     final r = await Future.wait([
       data.select('vehicules', const Query(orderBy: 'marque')),
       data.select(

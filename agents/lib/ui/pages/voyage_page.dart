@@ -54,7 +54,10 @@ class VoyagePage extends StatefulWidget {
   State<VoyagePage> createState() => _VoyagePageState();
 }
 
-class _VoyagePageState extends State<VoyagePage> {
+class _VoyagePageState extends State<VoyagePage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(silencieux: true); // mise à jour automatique (navigation.dart)
+
   bool loading = true;
   String? error;
   List<JsonRow> dossiers = [], paiements = [], clients = [], devises = [];
@@ -69,8 +72,8 @@ class _VoyagePageState extends State<VoyagePage> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => loading = true);
+  Future<void> _load({bool silencieux = false}) async {
+    if (!silencieux) setState(() => loading = true);
     final r = await Future.wait([
       data.select(
         'dossiers',

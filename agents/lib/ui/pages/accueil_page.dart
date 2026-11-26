@@ -30,7 +30,10 @@ class AccueilPage extends StatefulWidget {
   State<AccueilPage> createState() => _AccueilPageState();
 }
 
-class _AccueilPageState extends State<AccueilPage> {
+class _AccueilPageState extends State<AccueilPage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(); // « À faire aujourd’hui » à jour tout seul (navigation.dart)
+
   bool loading = true;
   List<AFaire> aFaire = [];
 

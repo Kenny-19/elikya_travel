@@ -4,14 +4,14 @@
      2. à traiter (alertes) ;
      3. la caisse de chaque agent (ouverte / fermée avec écart / oubliée / pas ouverte) ;
      4. qui a fait quoi aujourd'hui (fil d'activité, filtrable par agent).
-   Calculs dans js/stats.js (testés). Montants en USD (CDF converti au taux). Rafraîchi toutes les 2 minutes. */
+   Calculs dans js/stats.js (testés). Montants en USD (CDF converti au taux). Mise à jour automatique toutes les 30 s (app.js). */
 Elikya.registerModule({
   id: 'aujourdhui',
   label: 'Aujourd’hui',
   group: 'Pilotage',
   async render(root){
     var store = Elikya.data, h = Elikya.h, S = Elikya.stats;
-    var agentFiltre = '', fil = [], timer = null;
+    var agentFiltre = '', fil = [];
     var ACTIVITES = [
       { mod:'Voyage', titre:'Voyage', lien:'voyage', unite:['dossier','dossiers'] },
       { mod:'Location', titre:'Location', lien:'location', unite:['location','locations'] },
@@ -167,12 +167,7 @@ Elikya.registerModule({
       renderFil();
     });
     $('#refreshBtn').addEventListener('click', load);
-    // rafraîchissement automatique tant que CETTE page est affichée (le conteneur est réutilisé par les autres modules)
-    var jeton = {}; root._aujJeton = jeton;
-    timer = setInterval(function(){
-      if(root._aujJeton !== jeton || !$('#hero')) return clearInterval(timer);
-      if(!document.hidden) load();
-    }, 120000);
+    root.rafraichir = load;   // mise à jour automatique toutes les 30 s (app.js)
     await load();
   }
 });

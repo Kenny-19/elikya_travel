@@ -139,6 +139,7 @@ Elikya.registerModule({
     }
 
     $('#mois').addEventListener('change', load);
+    root.rafraichir = load;   // mise à jour automatique (app.js)
     $('#csvBtn').addEventListener('click', exportCsv);
     $('#printBtn').addEventListener('click', function(){
       root.querySelectorAll('details.viz-table').forEach(function(d){ d.open = true; });

@@ -1,6 +1,6 @@
 /* modules/fourniture.js — Fourniture (site direction) : catalogue + commandes clients.
    Même règles que l'app agents (agents/lib/ui/pages/fourniture_page.dart) :
-   le stock est un inventaire RELEVÉ (pas de déduction automatique à la livraison) ;
+   le stock baisse tout seul à la livraison (déclencheur db/stock_auto.sql) ; l'inventaire le corrige ;
    « réservé » = lignes des commandes à livrer, « disponible » = stock − réservé. Montants en USD. */
 Elikya.registerModule({
   id: 'fourniture',
@@ -23,7 +23,7 @@ Elikya.registerModule({
 
     root.innerHTML =
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Fourniture</h1>'+
-        '<p>Catalogue et commandes clients. Stock = inventaire relevé ; montants en USD.</p></div>'+
+        '<p>Catalogue et commandes clients. Le stock baisse tout seul à chaque livraison ; montants en USD.</p></div>'+
         '<div class="toolbar" style="margin:0"><div class="seg" id="seg"><button data-v="catalogue">Catalogue</button><button data-v="commandes">Commandes</button></div>'+
         '<button class="btn" id="refreshBtn">↻</button><button class="btn primary" id="newBtn" data-ecriture style="width:auto"></button></div></div>'+
       '<div class="row k4" id="kpis" style="margin-bottom:16px"></div>'+
@@ -35,7 +35,7 @@ Elikya.registerModule({
           field('Désignation','<input id="pDes" required>')+
           field('Catégorie','<select id="pCat">'+CATEGORIES.map(function(c){ return '<option>'+c+'</option>'; }).join('')+'</select>')+
           field('Unité','<input id="pUnite" value="pièce">')+
-          field('Stock relevé','<input id="pStock" inputmode="numeric" value="0" required>')+
+          field('Stock en magasin','<input id="pStock" inputmode="numeric" value="0" required>')+
           field('Seuil d’alerte','<input id="pSeuil" inputmode="numeric" value="5" required>')+
           field('Prix unitaire (USD)','<input id="pPrix" inputmode="decimal" required>')+
         '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="pSave" style="width:auto">Enregistrer</button>'+

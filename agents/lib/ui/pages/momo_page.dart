@@ -52,7 +52,10 @@ class MomoPage extends StatefulWidget {
   State<MomoPage> createState() => _MomoPageState();
 }
 
-class _MomoPageState extends State<MomoPage> {
+class _MomoPageState extends State<MomoPage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(silencieux: true); // mise à jour automatique (navigation.dart)
+
   bool loading = true, avant = false;
   String? error;
   List<JsonRow> comptes = [], transactions = [];
@@ -65,8 +68,8 @@ class _MomoPageState extends State<MomoPage> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => loading = true);
+  Future<void> _load({bool silencieux = false}) async {
+    if (!silencieux) setState(() => loading = true);
     final r = await Future.wait([
       data.select('momo_comptes', const Query(orderBy: 'id')),
       data.select(

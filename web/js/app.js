@@ -63,6 +63,7 @@
     document.querySelectorAll('#nav a').forEach(function(a){ a.classList.toggle('on', a.dataset.mod===m.id); });
     try{ if(location.hash.slice(1)!==m.id) history.replaceState(null,'','#'+m.id); }catch(e){}
     var root = document.getElementById('moduleRoot');
+    root.rafraichir = null;   // un module peut fournir sa fonction de relecture (sinon : son bouton ↻)
     root.innerHTML = '';
     Promise.resolve(m.render(root)).catch(function(err){
       root.innerHTML = '<div class="card"><p style="color:var(--crit)">Erreur module : '+err.message+'</p></div>';
@@ -84,6 +85,20 @@
     var id = location.hash.slice(1);
     if(id && id !== current && Elikya.user) route(id);
   });
+
+  // ----- Mise à jour automatique : la page affichée relit la base toutes les 30 secondes -----
+  // (pas quand l’onglet est caché, ni pendant une saisie, ni menu ouvert ; jamais sur #admin)
+  setInterval(function(){
+    if(document.hidden || !current || current === 'admin' || !Elikya.user) return;
+    if(document.body.classList.contains('menu-ouvert')) return;
+    var ae = document.activeElement;
+    if(ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return;
+    var root = document.getElementById('moduleRoot');
+    var formOuvert = Array.prototype.some.call(root.querySelectorAll('form'), function(f){ return f.offsetParent !== null; });
+    if(formOuvert) return;
+    if(typeof root.rafraichir === 'function') root.rafraichir();
+    else { var b = root.querySelector('#refreshBtn'); if(b) b.click(); }
+  }, 30000);
 
   // ----- Entrée cachée du super admin -----
   // Ctrl+Maj+A, ou 5 clics rapides sur le logo de la barre latérale, ou l'adresse …/#admin.

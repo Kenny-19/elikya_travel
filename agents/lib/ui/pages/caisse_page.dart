@@ -61,7 +61,10 @@ class CaissePage extends StatefulWidget {
   State<CaissePage> createState() => _CaissePageState();
 }
 
-class _CaissePageState extends State<CaissePage> {
+class _CaissePageState extends State<CaissePage> with AutoRafraichi {
+  @override
+  void rafraichir() => _load(silencieux: true); // mise à jour automatique (navigation.dart)
+
   bool loading = true, histo = false;
   String? error;
   List<JsonRow> devises = [], sessions = [], mouvements = [];
@@ -80,8 +83,8 @@ class _CaissePageState extends State<CaissePage> {
     _load();
   }
 
-  Future<void> _load() async {
-    setState(() => loading = true);
+  Future<void> _load({bool silencieux = false}) async {
+    if (!silencieux) setState(() => loading = true);
     final depuis = jourCle(DateTime.now().subtract(const Duration(days: 30)));
     final r = await Future.wait([
       data.select('devises', const Query(orderBy: 'id')),
