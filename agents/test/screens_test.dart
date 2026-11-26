@@ -249,6 +249,47 @@ void main() {
       expect(remote.server['momo_transactions']!.last['type'], 'transfert');
     });
 
+    test('effet sur le solde : dépôt et transfert baissent, retrait monte', () {
+      expect(effetMomo('depot', 100), -100);
+      expect(effetMomo('transfert', 40), -40);
+      expect(effetMomo('retrait', 60), 60);
+    });
+
+    testWidgets('le solde bouge tout seul : dépôt, puis retrait confirmé', (t) async {
+      await pump(t, MomoPage(data: data, profile: agent));
+      await t.tap(find.text('Dépôt'));
+      await t.pumpAndSettle();
+      await t.tap(dansDialogue('Airtel Money'));
+      await t.pump();
+      await fill(t, 'Montant (USD)', '310');
+      await t.pump();
+      expect(
+        find.text('Solde Airtel Money : ${Elk.money(2310, 'USD')} → après l’opération : ${Elk.money(2000, 'USD')}'),
+        findsOneWidget,
+      );
+      await t.tap(find.text('Enregistrer'));
+      await t.pumpAndSettle();
+      expect(remote.server['momo_comptes']!.first['solde'], 2000);
+      expect(find.text(Elk.money(2000, 'USD')), findsOneWidget, reason: 'affiché sans rien faire');
+
+      // le retrait M-Pesa de 150 $ en attente compte dès qu'il passe « réussi »
+      await t.tap(find.text('C’est passé'));
+      await t.pumpAndSettle();
+      expect(remote.server['momo_comptes']![1]['solde'], 1970);
+      expect(find.text(Elk.money(1970, 'USD')), findsOneWidget);
+    });
+
+    testWidgets('pas assez d’argent électronique : prévenu avant d’enregistrer', (t) async {
+      await pump(t, MomoPage(data: data, profile: agent));
+      await t.tap(find.text('Transfert'));
+      await t.pumpAndSettle();
+      await t.tap(dansDialogue('M-Pesa'));
+      await t.pump();
+      await fill(t, 'Montant (USD)', '5000');
+      await t.pump();
+      expect(find.textContaining('pas assez d’argent électronique'), findsOneWidget);
+    });
+
     testWidgets('mettre à jour le solde d’un opérateur', (t) async {
       await pump(t, MomoPage(data: data, profile: agent));
       await t.tap(find.text('Mettre à jour le solde').first);

@@ -2,7 +2,8 @@
 // - trois gros boutons : Dépôt · Retrait · Transfert (une ligne d'explication sous chacun) ;
 // - formulaire court : opérateur en grandes pastilles, montant, téléphone, « l'opération a réussi » ;
 // - opérations en attente : deux boutons clairs « C'est passé » / « Ça n'a pas marché ».
-// Les soldes des opérateurs sont des RELEVÉS saisis (pas recalculés). Montants en USD.
+// Le solde de chaque opérateur bouge tout seul à chaque opération réussie (déclencheur db/momo_soldes.sql) ;
+// « Mettre à jour le solde » le corrige d'après le téléphone de l'opérateur. Montants en USD.
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -28,6 +29,10 @@ const _statuts = {'reussi': ('Réussi', Elk.ok), 'en_attente': ('En attente', El
 String _usd(Object? n) => Elk.money(n, 'USD');
 String _op(Object? code) => _ops[code] ?? '${code ?? '—'}';
 num _num(Object? v) => v is num ? v : num.tryParse('$v') ?? 0;
+
+/// Effet d'une opération RÉUSSIE sur le solde de l'opérateur (argent électronique) :
+/// dépôt et transfert le font baisser, retrait le fait monter. Même règle que db/momo_soldes.sql (déclencheur).
+num effetMomo(Object? type, num montant) => type == 'retrait' ? montant : -montant;
 
 /// Début de période (heure locale, minuit) au format ISO UTC, ou null pour « Tout ».
 String? sinceOf(String periode, [DateTime? now]) {
@@ -237,6 +242,11 @@ class _MomoPageState extends State<MomoPage> {
         ],
         const SizedBox(height: 24),
         const TitreSection('Soldes des opérateurs'),
+        Text(
+          'Ils bougent tout seuls à chaque opération réussie : un dépôt ou un transfert les fait baisser, un retrait les fait monter. '
+          'Si le téléphone de l’opérateur affiche autre chose, corrigez avec « Mettre à jour le solde ».',
+          style: TextStyle(color: muted, fontSize: 13),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 12,
@@ -349,6 +359,38 @@ class _OperationDialogState extends State<_OperationDialog> {
   Object? compte;
   bool reussi = true, busy = false;
 
+  /// « Solde Airtel : 2 310 $ → après : 2 190 $ », en rouge s'il n'y a pas assez d'argent électronique.
+  Widget _apres() {
+    final c = widget.comptes.where((x) => x['id'] == compte).firstOrNull;
+    final m = parseAmount(_montant.text) ?? 0;
+    if (c == null || m <= 0) return const SizedBox.shrink();
+    final avant = _num(c['solde']), apres = avant + effetMomo(widget.type, m);
+    final manque = apres < 0;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: (manque ? Elk.crit : Elk.info).withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Solde ${_op(c['operateur'])} : ${_usd(avant)} → après l’opération : ${_usd(apres)}',
+            style: TextStyle(fontWeight: FontWeight.w700, color: manque ? Elk.crit : null),
+          ),
+          if (manque)
+            const Text(
+              'Attention : il n’y a pas assez d’argent électronique chez cet opérateur pour cette opération.',
+              style: TextStyle(color: Elk.crit),
+            ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _save() async {
     if (compte == null) return toast(context, 'Choisissez l’opérateur.');
     if (!_form.currentState!.validate()) return;
@@ -417,9 +459,11 @@ class _OperationDialogState extends State<_OperationDialog> {
                 decoration: const InputDecoration(labelText: 'Montant (USD)'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) => (parseAmount(v) ?? 0) > 0 ? null : 'Indiquez le montant',
+                onChanged: (_) => setState(() {}), // solde après l'opération recalculé
               ),
               AmountField(controller: _frais, label: 'Commission (facultatif)', allowZero: true, required: false),
             ]),
+            _apres(),
             const SizedBox(height: 16),
             const Etape('3', 'Téléphone du client'),
             TextField(

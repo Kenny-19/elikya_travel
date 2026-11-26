@@ -1,5 +1,5 @@
-/* modules/momo.js — Suivi Mobile Money : soldes relevés par opérateur + journal des transactions.
-   Suivi uniquement : les soldes sont des RELEVÉS saisis (pas recalculés), aucune opération réelle. */
+/* modules/momo.js — Suivi Mobile Money : solde de chaque opérateur + journal des transactions.
+   Le solde bouge tout seul à chaque opération réussie (déclencheur db/momo_soldes.sql) ; « Corriger » le remet d'après le téléphone. */
 Elikya.registerModule({
   id: 'momo',
   label: 'Mobile Money',
@@ -12,9 +12,9 @@ Elikya.registerModule({
     var PERIODES = {jour:"Aujourd'hui", semaine:'7 jours', mois:'30 jours', tout:'Tout'};
 
     root.innerHTML =
-      '<div class="banner">Module Mobile Money · soldes relevés par opérateur et journal des transactions (dépôt, retrait, transfert).</div>'+
+      '<div class="banner">Module Mobile Money · solde de chaque opérateur et journal des transactions (dépôt, retrait, transfert).</div>'+
       '<div class="phead"><div><div class="eyebrow">Module · Suivi</div><h1 class="pf">Mobile Money</h1>'+
-        '<p>Montants en USD. Les soldes sont des relevés saisis à la main, ils ne sont pas recalculés.</p></div>'+
+        '<p>Montants en USD. Le solde de chaque opérateur bouge tout seul : un dépôt ou un transfert le fait baisser, un retrait le fait monter.</p></div>'+
         '<button class="btn primary" id="newBtn" data-ecriture style="width:auto">＋ Nouvelle transaction</button></div>'+
 
       '<div class="row k3" id="comptes" style="margin-bottom:16px"></div>'+
@@ -32,9 +32,9 @@ Elikya.registerModule({
       '</div>'+
 
       '<div class="card hidden" id="soldeCard" data-ecriture style="margin-bottom:16px">'+
-        '<h3 style="margin:0 0 12px" id="soldeTitle">Relevé de solde</h3>'+
+        '<h3 style="margin:0 0 12px" id="soldeTitle">Corriger le solde</h3>'+
         '<form id="sForm"><div class="formgrid">'+
-          field('Nouveau solde relevé (USD)','<input id="sSolde" inputmode="decimal" required>')+
+          field('Solde affiché sur le téléphone (USD)','<input id="sSolde" inputmode="decimal" required>')+
         '</div><div class="toolbar" style="margin:16px 0 0"><button class="btn primary" type="submit" id="sSave" style="width:auto">Mettre à jour</button><button class="btn" type="button" id="sCancel">Annuler</button></div></form>'+
       '</div>'+
 
@@ -87,7 +87,7 @@ Elikya.registerModule({
       box.innerHTML = comptes.map(function(c){
         return '<div class="card kpi"><div class="lab" style="display:flex;justify-content:space-between;align-items:center">'+
           '<span>'+esc(OPS[c.operateur]||c.operateur)+'</span>'+
-          '<button class="btn" data-ecriture data-solde="'+c.id+'" style="padding:4px 10px;font-size:12px">Relevé</button></div>'+
+          '<button class="btn" data-ecriture data-solde="'+c.id+'" style="padding:4px 10px;font-size:12px">Corriger</button></div>'+
           '<div class="val tnum">'+usd(c.solde)+'</div>'+
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">'+(total?Math.round(Number(c.solde||0)/total*100):0)+' % du float total ('+usd(total)+')</div></div>';
       }).join('') || '<div class="card" style="color:var(--muted)">Aucun compte opérateur.</div>';
@@ -151,7 +151,7 @@ Elikya.registerModule({
       var b = e.target.closest('[data-solde]'); if(!b) return;
       editCompte = comptes.filter(function(c){return String(c.id)===b.dataset.solde;})[0];
       if(!editCompte) return;
-      $('#soldeTitle').textContent = 'Relevé de solde · '+(OPS[editCompte.operateur]||editCompte.operateur);
+      $('#soldeTitle').textContent = 'Corriger le solde · '+(OPS[editCompte.operateur]||editCompte.operateur);
       $('#sSolde').value = String(editCompte.solde);
       formCard.classList.add('hidden'); soldeCard.classList.remove('hidden');
       $('#sSolde').focus();

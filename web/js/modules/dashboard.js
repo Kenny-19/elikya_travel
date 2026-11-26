@@ -131,7 +131,7 @@ Elikya.registerModule({
         return '<div style="margin-bottom:12px"><div style="display:flex;font-size:13px"><span>'+esc(OPS[c.operateur]||c.operateur)+'</span>'+
           '<b class="tnum" style="margin-left:auto">'+usd(c.solde)+'</b><span class="tnum" style="color:var(--muted);width:46px;text-align:right">'+pct+' %</span></div>'+
           '<div class="meter"><b style="width:'+pct+'%"></b></div></div>';
-      }).join('')+'<div style="display:flex;font-size:13px;border-top:1px solid var(--line);padding-top:9px"><span>Total relevé</span><b class="tnum" style="margin-left:auto">'+usd(floatTot)+'</b></div>'
+      }).join('')+'<div style="display:flex;font-size:13px;border-top:1px solid var(--line);padding-top:9px"><span>Total</span><b class="tnum" style="margin-left:auto">'+usd(floatTot)+'</b></div>'
         : '<p style="color:var(--muted);margin:0">Aucun compte opérateur.</p>';
 
       if(err) h.toast('Attention : '+err.error.message);

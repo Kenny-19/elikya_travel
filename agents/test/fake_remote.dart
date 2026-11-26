@@ -70,7 +70,22 @@ class FakeRemote implements Remote {
     _check();
     if (_t(table).any((x) => x['id'] == row['id'])) throw RemoteError('duplicate key', '23505');
     _t(table).add({...row});
+    if (table == 'momo_transactions') _soldeMomo(null, row);
     return {...row};
+  }
+
+  /// Imite le déclencheur db/momo_soldes.sql : le solde de l'opérateur suit les opérations réussies.
+  void _soldeMomo(JsonRow? avant, JsonRow? apres) {
+    void applique(JsonRow t, int sens) {
+      if (t['statut'] != 'reussi') return;
+      final c = _t('momo_comptes').where((x) => x['id'] == t['compte_id']).firstOrNull;
+      if (c == null) return;
+      final m = (t['montant'] as num) * (t['type'] == 'retrait' ? 1 : -1) * sens;
+      c['solde'] = (c['solde'] as num) + m;
+    }
+
+    if (avant != null) applique(avant, -1);
+    if (apres != null) applique(apres, 1);
   }
 
   @override
@@ -81,14 +96,18 @@ class FakeRemote implements Remote {
       throw RemoteError('duplicate key value violates unique constraint', '23505');
     }
     final ex = _t(table).where((x) => x[key] == row[key]).firstOrNull;
+    final avant = ex == null ? null : {...ex};
     ex == null ? _t(table).add({...row}) : ex.addAll(row);
+    if (table == 'momo_transactions') _soldeMomo(avant, ex ?? row);
   }
 
   @override
   Future<JsonRow?> update(String table, String key, Object id, JsonRow patch) async {
     _check();
     final ex = _t(table).where((x) => x[key] == id).firstOrNull;
+    final avant = ex == null ? null : {...ex};
     ex?.addAll(patch);
+    if (table == 'momo_transactions' && ex != null) _soldeMomo(avant, ex);
     return ex == null ? null : {...ex};
   }
 

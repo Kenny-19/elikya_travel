@@ -36,6 +36,7 @@ App agents (agents/, Flutter) ─────┘   ▲
 db/roles.sql            # rôles : RLS par permission + mon_profil (à lancer après schema.sql)
 db/superadmin.sql       # super admin : rôle + RLS users/roles réservée (cf. docs/super-admin.md)
 db/location.sql         # location de véhicules : tables vehicules + locations, anti-chevauchement, droit « location »
+db/momo_soldes.sql      # mobile money : le solde des opérateurs suit les opérations réussies (déclencheur)
 db/voyage.sql           # voyage complété : dates, détails par service, étapes visa, encaissements (paiements)
 supabase/functions/admin-comptes/ # Edge Function : création / gestion des comptes (super admin seul)
 scripts/build-site.js   # prépare dist/site pour l'hébergeur (vérifie la clé anon, CSP) — cf. docs/mise-en-ligne.md
@@ -59,7 +60,7 @@ docs/                   # architecture.md, roadmap.md
 ```
 
 ## Comment lancer (dev)
-1. Appliquer dans Supabase (SQL Editor → Run), dans l'ordre : `db/schema.sql`, `db/roles.sql`, `db/location.sql`, `db/voyage.sql`, puis `db/superadmin.sql`.
+1. Appliquer dans Supabase (SQL Editor → Run), dans l'ordre : `db/schema.sql`, `db/roles.sql`, `db/location.sql`, `db/voyage.sql`, `db/momo_soldes.sql`, puis `db/superadmin.sql`.
 2. Créer un utilisateur : Supabase → Authentication → Users → Add user (Auto Confirm), avec le
    **même e-mail** qu'une fiche `users` (ex. `dg@elikyagroup.cd` pour le site), puis relancer `db/roles.sql`.
 3. `cp web/config.example.js web/config.js` puis coller la **clé anon** (Settings → API).
@@ -88,7 +89,7 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 |--------------|--------------------|
 | Voyage       | `dossiers` (+ dates, détails, étape visa), `paiements` (encaissements), `clients`, `devises` — règles : `web/js/stats.js` (voy*) = `agents/lib/data/voyage_logic.dart` |
 | Fourniture   | `produits`, `commandes`, `commande_lignes` |
-| Mobile Money | `momo_comptes`, `momo_transactions` |
+| Mobile Money | `momo_comptes`, `momo_transactions` — solde ajusté par déclencheur (`db/momo_soldes.sql`) : dépôt/transfert −, retrait + ; même règle : `effetMomo` (app) |
 | Caisse       | `caisse_sessions`, `mouvements_caisse`, `paiements` |
 | Location     | `vehicules`, `locations` (+ `clients`) — règles : `web/js/stats.js` (loc*) = `agents/lib/data/location_logic.dart` |
 | Clients      | `clients` |
