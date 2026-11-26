@@ -18,9 +18,20 @@ Architecture complète : `../docs/architecture.md`.
      **Informations complémentaires → Exécuter quand même**.
 3. Première connexion **avec internet** (compte créé par la direction, même e-mail que la fiche `users`).
 
-### Mettre à jour
-Augmenter `version:` dans `pubspec.yaml` (ex. `1.0.1+2`), relancer `node scripts/build-installer.js`,
-et installer le nouveau fichier par-dessus (l'app doit être fermée ; l'installeur le demande).
+### Mettre à jour — à distance (depuis la 1.6.0)
+1. Augmenter `version:` dans `pubspec.yaml` : `1.6.0+8` → `1.6.1+9` (le nombre après `+` doit **toujours** augmenter).
+2. `git commit` + `git push`.
+3. `node scripts/publier-agents.js --notes "Ce qui change"` — construit l'installeur, calcule son empreinte
+   et le publie sur GitHub (Releases) avec le manifeste `agents.json`.
+   Une seule fois avant : installer l'outil GitHub (`winget install --id GitHub.cli`) puis `gh auth login`.
+
+Sur chaque poste, l'app vérifie au démarrage puis toutes les 3 heures. Un bandeau propose
+« Mettre à jour maintenant » : téléchargement, contrôle d'intégrité (SHA-256), puis l'app se ferme,
+s'installe et se rouvre toute seule. Les saisies (même hors ligne) sont conservées.
+
+Sans internet ou pour un poste neuf : installer le fichier `dist/Elikya-Agents-Setup-<version>.exe`
+par-dessus (l'app doit être fermée ; l'installeur le demande). Les postes encore en 1.5.0 ou avant
+doivent recevoir la 1.6.0 de cette façon une dernière fois.
 
 ### Données locales — à ne pas perdre
 La base SQLite de secours (copie hors ligne + **saisies en attente**) est dans

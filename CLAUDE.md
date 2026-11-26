@@ -41,6 +41,7 @@ db/stock_auto.sql       # fourniture : le stock baisse tout seul quand une comma
 db/voyage.sql           # voyage complété : dates, détails par service, étapes visa, encaissements (paiements)
 supabase/functions/admin-comptes/ # Edge Function : création / gestion des comptes (super admin seul)
 scripts/build-site.js   # prépare dist/site pour l'hébergeur (vérifie la clé anon, CSP) — cf. docs/mise-en-ligne.md
+scripts/publier-agents.js  # MISE À JOUR À DISTANCE : construit + publie la version (GitHub Releases, manifeste agents.json)
 scripts/build-installer.js # installeur Windows de l'app agents (NSIS) → dist/Elikya-Agents-Setup-<version>.exe
 scripts/make-icon.js    # assemble l'icône de l'app agents depuis le logo officiel (agents/assets/brand)
 agents/installer/       # script NSIS de l'installeur
@@ -137,5 +138,10 @@ Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse
   Messages de saisie : `savedSuffix(res.offline)` ajoute « hors ligne, sera synchronisé ».
 - `flutter analyze` et `flutter test` doivent passer (faux Supabase : `agents/test/fake_remote.dart`).
   Après modif de `local_db.dart` : `dart run build_runner build`.
+- **Mise à jour à distance** : l’app lit `releases/latest/download/agents.json` (au démarrage + toutes les 3 h,
+  `lib/data/mise_a_jour.dart`), propose « Mettre à jour maintenant », vérifie le SHA-256 puis lance l’installeur en `/S`
+  (il attend la fermeture de l’app, installe, la relance). Publier : augmenter `version:` (le +build DOIT augmenter)
+  dans `agents/pubspec.yaml`, pousser, puis `node scripts/publier-agents.js --notes "…"` (outil `gh` connecté).
+  `lib/version.dart` est généré par build-installer.js (un test vérifie qu’il suit pubspec.yaml).
 - `agents/lib/config.dart` (clé anon) est ignoré par git ; modèle : `config.example.dart`.
 - Nouvelle table → `agents/lib/data/tables.dart` **et** `web/js/data.js` **et** politiques dans `db/roles.sql`.

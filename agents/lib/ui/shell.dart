@@ -4,7 +4,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/data_service.dart';
+import '../data/mise_a_jour.dart';
 import '../profile.dart';
+import 'mise_a_jour_ui.dart';
 import 'modules.dart';
 import 'navigation.dart';
 import 'theme.dart';
@@ -22,7 +24,7 @@ class _ShellState extends State<Shell> {
   late final List<ModuleDef> allowed = modules.where((m) => m.visiblePour(widget.profile)).toList();
   int index = 0;
   int reload = 0; // incrémenté à la resynchronisation → la page relit la base en ligne
-  Timer? _horloge; // mise à jour automatique des écrans toutes les 30 s (navigation.dart : Rafraichir)
+  Timer? _horloge, _majTimer; // mise à jour automatique des écrans toutes les 30 s (navigation.dart : Rafraichir)
 
   @override
   void initState() {
@@ -30,11 +32,18 @@ class _ShellState extends State<Shell> {
     widget.data.status.addListener(_onStatus);
     Navigation.demande.addListener(_onNavigation);
     _horloge = Timer.periodic(const Duration(seconds: 30), (_) => Rafraichir.tick.value++);
+    // mise à jour à distance : vérifier au démarrage puis toutes les 3 heures
+    final maj = MiseAJour.instance;
+    if (maj != null) {
+      maj.verifier();
+      _majTimer = Timer.periodic(const Duration(hours: 3), (_) => maj.verifier());
+    }
   }
 
   @override
   void dispose() {
     _horloge?.cancel();
+    _majTimer?.cancel();
     widget.data.status.removeListener(_onStatus);
     Navigation.demande.removeListener(_onNavigation);
     super.dispose();
@@ -74,6 +83,7 @@ class _ShellState extends State<Shell> {
             child: Column(
               children: [
                 NetBanner(data: widget.data),
+                if (MiseAJour.instance != null) BandeauMiseAJour(maj: MiseAJour.instance!, data: widget.data),
                 Expanded(
                   child: KeyedSubtree(key: ValueKey('${m.id}-$reload'), child: m.build(widget.data, widget.profile)),
                 ),

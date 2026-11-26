@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config.dart';
 import 'data/data_service.dart';
 import 'data/local_db.dart';
+import 'data/mise_a_jour.dart';
 import 'data/remote.dart';
 import 'ui/auth_gate.dart';
 import 'ui/theme.dart';
@@ -31,6 +32,7 @@ Future<void> main() async {
 
   final data = DataService(LocalDb(), SupabaseRemote(Supabase.instance.client));
   await data.refreshCounts();
+  MiseAJour.instance = MiseAJour(); // mise à jour à distance (lib/data/mise_a_jour.dart)
   runApp(ElikyaAgentsApp(data: data));
 }
 

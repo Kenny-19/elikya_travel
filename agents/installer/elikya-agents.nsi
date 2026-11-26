@@ -6,7 +6,8 @@
 ;  - Installation par utilisateur (pas besoin des droits administrateur)
 ;    dans %LOCALAPPDATA%\Programs\Elikya Agents
 ;  - Raccourcis menu Démarrer + bureau, entrée « Applications installées »
-;  - Mise à jour : relancer un installeur plus récent par-dessus
+;  - Mise à jour : relancer un installeur plus récent par-dessus, ou à distance depuis l'app
+;    (installation silencieuse /S : attend que l'app se ferme, installe, relance l'app)
 ;  - Désinstallation : les DONNÉES LOCALES (copie hors ligne + saisies en attente)
 ;    sont conservées, pour ne jamais perdre une saisie pas encore synchronisée.
 ; =====================================================================
@@ -55,11 +56,21 @@ VIAddVersionKey "LegalCopyright" "Copyright (C) 2026 ${PUBLISHER}"
 ; L'application ne doit pas tourner pendant l'installation / la désinstallation
 !macro FermerApp un
 Function ${un}FermerApp
+  StrCpy $2 0
   boucle:
     nsExec::ExecToStack 'cmd /c tasklist /FI "IMAGENAME eq ${EXE}" /NH | find /I "${EXE}"'
     Pop $0
     Pop $1
     ${If} $0 == 0
+      ; mise à jour à distance (/S) : l'application est en train de se fermer, on attend jusqu'à 30 s
+      ${If} ${Silent}
+        IntOp $2 $2 + 1
+        ${If} $2 < 30
+          Sleep 1000
+          Goto boucle
+        ${EndIf}
+        Abort
+      ${EndIf}
       MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${APP} est ouvert.$\r$\nFermez l’application (bouton Quitter ou croix de la fenêtre), puis cliquez sur Réessayer." /SD IDCANCEL IDRETRY boucle
       Abort
     ${EndIf}
@@ -94,6 +105,10 @@ Section "Application" SecApp
   WriteRegStr   HKCU "${UNINST_KEY}" "QuietUninstallString" '"$INSTDIR\Desinstaller.exe" /S'
   WriteRegDWORD HKCU "${UNINST_KEY}" "NoModify" 1
   WriteRegDWORD HKCU "${UNINST_KEY}" "NoRepair" 1
+
+  ; mise à jour à distance (installation silencieuse lancée par l'application) : on la relance
+  IfSilent 0 +2
+    Exec '"$INSTDIR\${EXE}"'
 SectionEnd
 
 Section "Uninstall"

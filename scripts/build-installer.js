@@ -35,6 +35,14 @@ const pub = fs.readFileSync(path.join(AGENTS, 'pubspec.yaml'), 'utf8');
 const m = pub.match(/^version:\s*(\d+)\.(\d+)\.(\d+)(?:\+(\d+))?/m);
 if (!m) fail('version introuvable dans agents/pubspec.yaml');
 const VERSION = `${m[1]}.${m[2]}.${m[3]}`, VERSION4 = `${VERSION}.${m[4] || 0}`;
+// numéro de version connu de l’app (mise à jour à distance : lib/data/mise_a_jour.dart)
+fs.writeFileSync(path.join(AGENTS, 'lib', 'version.dart'), [
+  "// Version de l'application — GÉNÉRÉ par scripts/build-installer.js d'après agents/pubspec.yaml.",
+  '// Ne pas modifier à la main : changer « version: » dans pubspec.yaml puis reconstruire.',
+  `const versionApp = '${VERSION}';`,
+  `const buildApp = ${Number(m[4] || 0)};`,
+  ''
+].join('\n'));
 
 // ---------------------------------------------------------------- 2. compilation Flutter
 const RELEASE = path.join(AGENTS, 'build', 'windows', 'x64', 'runner', 'Release');
@@ -86,4 +94,5 @@ try {
     `/DICON=${ICON}`, `/DOUTFILE=${OUTFILE}`, path.join(AGENTS, 'installer', 'elikya-agents.nsi')], { stdio: 'inherit' });
 } catch { fail('La compilation NSIS a échoué.'); }
 const mo = (fs.statSync(OUTFILE).size / 1048576).toFixed(1);
-console.log(`\n✓ ${path.relative(ROOT, OUTFILE)} (${mo} Mo) — à copier sur les postes des agents et à double-cliquer.`);
+console.log(`\n✓ ${path.relative(ROOT, OUTFILE)} (${mo} Mo) — à copier sur les postes des agents et à double-cliquer
+  (ou à publier pour la mise à jour à distance : node scripts/publier-agents.js --notes "…").`);
