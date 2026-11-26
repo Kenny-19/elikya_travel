@@ -146,30 +146,59 @@ void main() {
     expect(s['c2']!.commandes, 1);
   });
 
+  Finder dansDialogue(Finder f) => find.descendant(of: find.byType(AlertDialog), matching: f);
+
+  test('état d’un produit en mots simples', () {
+    expect(etatProduit(0, 0, 10).$1, 'Plus rien en stock');
+    expect(etatProduit(5, 8, 2).$1, 'Pas assez pour les commandes');
+    expect(etatProduit(8, 0, 10).$1, 'Bientôt épuisé');
+    expect(etatProduit(240, 25, 20).$1, 'OK');
+  });
+
   group('Fourniture', () {
-    testWidgets('catalogue : réservé, disponible, alertes', (t) async {
+    testWidgets('s’ouvre sur les commandes à livrer', (t) async {
       await pump(t, FourniturePage(data: data, profile: vente));
-      expect(find.text('TUY-110'), findsOneWidget);
-      expect(find.text('215'), findsOneWidget); // 240 − 25 réservés
-      expect(find.text('Sous le seuil'), findsWidgets);
-      expect(find.text('Rupture'), findsOneWidget);
-      expect(find.text(Elk.money(240 * 12 + 8 * 15, 'USD')), findsOneWidget); // valeur du stock
+      expect(find.text('Société Kamoa'), findsOneWidget);
+      expect(find.text('25 × Tuyau PVC Ø110'), findsOneWidget);
+      expect(find.text('C’est livré'), findsOneWidget);
+      expect(find.text('Voir les commandes terminées (1)'), findsOneWidget, reason: 'l’annulée est rangée');
     });
 
-    testWidgets('nouvelle commande : lignes + total', (t) async {
+    testWidgets('stock : disponible, alertes « à recommander »', (t) async {
       await pump(t, FourniturePage(data: data, profile: vente));
-      await t.tap(find.text('Commandes'));
+      await t.tap(find.text('Stock'));
       await t.pumpAndSettle();
-      expect(find.text('CMD-001'), findsOneWidget);
+      expect(find.text('Disponible : 215'), findsOneWidget); // 240 − 25 réservés
+      expect(find.text('À recommander : 2 produits'), findsOneWidget);
+      expect(find.text('Bientôt épuisé'), findsOneWidget);
+      expect(find.text('Plus rien en stock'), findsOneWidget);
+    });
+
+    testWidgets('nouvelle commande : − / +, total, alerte de stock', (t) async {
+      await pump(t, FourniturePage(data: data, profile: vente));
       await t.tap(find.text('Nouvelle commande'));
       await t.pumpAndSettle();
+      await t.tap(find.text('Enregistrer'));
+      await t.pumpAndSettle();
+      expect(find.text('Choisissez le client.'), findsOneWidget, reason: 'aucun client choisi d’avance');
+      await t.tap(dansDialogue(find.text('Client')));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Société Kamoa').last);
+      await t.pumpAndSettle();
+      // 1er produit du catalogue (tri par code) : Casque EPI-220 à 15 $, 8 disponibles
       await fill(t, 'Quantité', '3');
       await t.pump();
-      // 1re ligne = 1er produit du catalogue (tri par réf.) : EPI-220 à 15 $
       expect(find.text('Total : ${Elk.money(45, 'USD')}'), findsOneWidget);
-      await t.tap(find.text('Ajouter une ligne'));
+      await t.tap(find.byTooltip('Un de plus'));
+      await t.pump();
+      expect(find.text('Total : ${Elk.money(60, 'USD')}'), findsOneWidget);
+      await fill(t, 'Quantité', '9');
+      await t.pump();
+      expect(find.text('Attention : il n’en reste que 8 de disponible.'), findsOneWidget);
+      await fill(t, 'Quantité', '3');
+      await t.tap(find.text('Ajouter un autre produit'));
       await t.pumpAndSettle();
-      await fill(t, 'Quantité', '2'); // 2e ligne
+      await fill(t, 'Quantité', '2'); // 2e produit
       await t.pump();
       expect(find.text('Total : ${Elk.money(75, 'USD')}'), findsOneWidget);
       await t.tap(find.text('Enregistrer'));
@@ -177,40 +206,54 @@ void main() {
       final cmd = remote.server['commandes']!.last;
       expect(cmd['total'], 75);
       expect(cmd['statut'], 'a_livrer');
+      expect(cmd['client_id'], 'c2');
       expect(remote.server['commande_lignes']!.where((l) => l['commande_id'] == cmd['id']).length, 2);
-      expect(find.text('${cmd['ref']}'), findsOneWidget);
+      expect(find.textContaining('${cmd['ref']}'), findsWidgets); // carte + message de confirmation
     });
 
-    testWidgets('commande à livrer → livrée', (t) async {
+    testWidgets('« C’est livré »', (t) async {
       await pump(t, FourniturePage(data: data, profile: vente));
-      await t.tap(find.text('Commandes'));
-      await t.pumpAndSettle();
-      await t.tap(find.text('À livrer').last);
-      await t.pumpAndSettle();
-      await t.tap(find.text('Livrée').last);
+      await t.tap(find.text('C’est livré'));
       await t.pumpAndSettle();
       expect(remote.server['commandes']!.first['statut'], 'livree');
+      expect(find.text('Aucune commande à livrer. Tout est à jour !'), findsOneWidget);
     });
 
-    testWidgets('produit : référence en double refusée, inventaire modifiable', (t) async {
+    testWidgets('annuler une commande demande confirmation', (t) async {
       await pump(t, FourniturePage(data: data, profile: vente));
+      await t.tap(find.text('Annuler la commande'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Non, la garder'));
+      await t.pumpAndSettle();
+      expect(remote.server['commandes']!.first['statut'], 'a_livrer');
+      await t.tap(find.text('Annuler la commande'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Oui, annuler'));
+      await t.pumpAndSettle();
+      expect(remote.server['commandes']!.first['statut'], 'annulee');
+    });
+
+    testWidgets('produit : code en double refusé, « Compter le stock »', (t) async {
+      await pump(t, FourniturePage(data: data, profile: vente));
+      await t.tap(find.text('Stock'));
+      await t.pumpAndSettle();
       await t.tap(find.text('Nouveau produit'));
       await t.pumpAndSettle();
-      await fill(t, 'Référence', 'tuy-110');
-      await fill(t, 'Désignation', 'Doublon');
-      await fill(t, 'Prix unitaire (USD)', '1');
+      await fill(t, 'Code produit', 'tuy-110');
+      await fill(t, 'Nom du produit', 'Doublon');
+      await fill(t, 'Prix de vente (USD)', '1');
       await t.tap(find.text('Enregistrer'));
       await t.pumpAndSettle();
-      expect(find.text('Cette référence existe déjà'), findsOneWidget);
+      expect(find.text('Ce code existe déjà'), findsOneWidget);
       await t.tap(find.text('Annuler'));
       await t.pumpAndSettle();
 
-      final edit = find.byTooltip('Modifier / inventaire').first; // EPI-220 (tri par réf.)
-      await t.ensureVisible(edit);
+      final compter = find.text('Compter le stock').first; // EPI-220 (tri par code)
+      await t.ensureVisible(compter);
       await t.pumpAndSettle();
-      await t.tap(edit);
+      await t.tap(compter);
       await t.pumpAndSettle();
-      await fill(t, 'Stock relevé', '30');
+      await t.enterText(dansDialogue(find.byType(TextField)), '30');
       await t.tap(find.text('Enregistrer'));
       await t.pumpAndSettle();
       expect(remote.server['produits']!.firstWhere((p) => p['ref'] == 'EPI-220')['stock'], 30);
@@ -218,39 +261,59 @@ void main() {
   });
 
   group('Clients', () {
-    testWidgets('liste, CA, recherche', (t) async {
+    testWidgets('cartes, « a acheté pour », recherche', (t) async {
       await pump(t, ClientsPage(data: data, profile: vente));
-      expect(find.text('Patrick Mwamba'), findsWidgets);
-      expect(find.text(Elk.money(620, 'USD')), findsWidgets);
-      expect(find.text(Elk.money(920, 'USD')), findsOneWidget); // CA cumulé total
-      await t.enterText(find.widgetWithText(TextField, 'Rechercher'), 'kolwezi');
+      expect(find.text('Patrick Mwamba'), findsOneWidget);
+      expect(find.text(Elk.money(620, 'USD')), findsOneWidget);
+      expect(find.text('2 voyages'), findsOneWidget);
+      expect(find.text('1 commande'), findsOneWidget); // Kamoa : l’annulée ne compte pas
+      await t.enterText(find.widgetWithText(TextField, 'Chercher un client'), 'kolwezi');
       await t.pumpAndSettle();
       expect(find.text('1 client'), findsOneWidget);
       expect(find.text('Société Kamoa'), findsOneWidget);
+      expect(find.text('Patrick Mwamba'), findsNothing);
+    });
+
+    testWidgets('meilleurs clients en premier', (t) async {
+      await pump(t, ClientsPage(data: data, profile: vente));
+      await t.tap(find.text('Meilleurs clients'));
+      await t.pumpAndSettle();
+      final y1 = t.getTopLeft(find.text('Patrick Mwamba')).dy, y2 = t.getTopLeft(find.text('Société Kamoa')).dy;
+      expect(y1 < y2, isTrue, reason: '620 \$ avant 300 \$');
     });
 
     testWidgets('nouveau client, créé par l’agent connecté', (t) async {
       await pump(t, ClientsPage(data: data, profile: vente));
       await t.tap(find.text('Nouveau client'));
       await t.pumpAndSettle();
-      await fill(t, 'Nom', 'Grace Ilunga');
+      await t.tap(find.text('Une entreprise'));
+      await t.pump();
+      expect(find.text('Nom de l’entreprise'), findsOneWidget);
+      await t.tap(find.text('Une personne'));
+      await t.pump();
+      await fill(t, 'Nom complet', 'Grace Ilunga');
+      await t.tap(find.text('Plus d’informations (facultatif)'));
+      await t.pumpAndSettle();
       await fill(t, 'E-mail', 'pas-un-mail');
       await t.tap(find.text('Enregistrer'));
       await t.pumpAndSettle();
       expect(find.text('E-mail invalide'), findsOneWidget);
       await fill(t, 'E-mail', 'grace@exemple.cd');
+      await t.tap(dansDialogue(find.text('VIP')));
       await t.tap(find.text('Enregistrer'));
       await t.pumpAndSettle();
       final c = remote.server['clients']!.last;
       expect(c['nom'], 'Grace Ilunga');
+      expect(c['type'], 'particulier');
+      expect(c['segment'], 'VIP');
       expect(c['cree_par'], 'u1');
       expect(c['ville'], 'Lubumbashi');
     });
 
-    testWidgets('rôle sans fourniture : CA partiel signalé, commandes non lues', (t) async {
+    testWidgets('rôle sans fourniture : montant partiel signalé, commandes non lues', (t) async {
       await pump(t, ClientsPage(data: data, profile: pa));
-      expect(find.textContaining('CA partiel'), findsOneWidget);
-      expect(find.text(Elk.money(620, 'USD')), findsWidgets); // le voyage reste compté
+      expect(find.textContaining('ne comptent pas les commandes de fourniture'), findsOneWidget);
+      expect(find.text(Elk.money(620, 'USD')), findsOneWidget); // le voyage reste compté
       expect(find.text(Elk.money(300, 'USD')), findsNothing);
     });
   });

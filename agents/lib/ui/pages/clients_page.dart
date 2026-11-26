@@ -1,7 +1,9 @@
-// Module Clients : fiches (particuliers / entreprises) + chiffre d'affaires cumulé.
-// CA cumulé = dossiers voyage + commandes fourniture, hors annulés, converti en USD.
+// Module Clients — pensé pour être TRÈS simple :
+// une grande barre de recherche, puis une carte par client (nom, téléphone, ce qu'il a acheté),
+// et une fiche courte : « Particulier ou entreprise ? », nom, téléphone ; le reste est facultatif.
+// « A acheté pour » = dossiers voyage + commandes fourniture, hors annulés, converti en USD.
 // Chaque agent ne voit que ce que son rôle autorise (RLS) : un rôle sans « fourniture »
-// verra un CA sans les commandes — l'écran l'indique.
+// verra un total sans les commandes — l'écran le dit en clair.
 import 'package:flutter/material.dart';
 
 import '../../data/data_service.dart';
@@ -17,6 +19,7 @@ const segments = ['', 'VIP', 'Grand compte', 'Régulier', 'Prospect'];
 
 String _usd(num n) => Elk.money((n * 100).round() / 100, 'USD');
 num _num(Object? v) => v is num ? v : num.tryParse('$v') ?? 0;
+String _pluriel(int n, String mot) => '$n $mot${n > 1 ? 's' : ''}';
 
 class ClientStats {
   int dossiers = 0, commandes = 0;
@@ -109,133 +112,205 @@ class _ClientsPageState extends State<ClientsPage> {
     }).toList();
     if (tri == 'ca') visibles.sort((a, b) => st(b).ca.compareTo(st(a).ca));
 
-    final caTotal = stats.values.fold<num>(0, (s, x) => s + x.ca);
-    final top = clients.isEmpty ? null : (List.of(clients)..sort((a, b) => st(b).ca.compareTo(st(a).ca))).first;
-    final partiel = !widget.profile.can('voyage') || !widget.profile.can('fourniture');
+    final p = widget.profile;
     final muted = Theme.of(context).hintColor;
+    final manque = [if (!p.can('voyage')) 'les voyages', if (!p.can('fourniture')) 'les commandes de fourniture'];
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 22, 24, 40),
       children: [
         PageHeader(
           title: 'Clients',
-          subtitle: 'Fiches clients et chiffre d’affaires cumulé (voyage + fourniture, hors annulés, en USD).',
+          subtitle: 'Retrouvez un client, ou ajoutez-en un nouveau.',
           actions: [
             OutlinedButton.icon(
               onPressed: _load,
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Rafraîchir'),
             ),
-            FilledButton.icon(
-              onPressed: loading ? null : () => _edit(),
-              icon: const Icon(Icons.person_add_alt, size: 18),
-              label: const Text('Nouveau client'),
-            ),
           ],
         ),
         const SizedBox(height: 18),
         Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            Kpi('Clients', '${clients.length}'),
-            Kpi('Entreprises', '${clients.where((c) => c['type'] == 'entreprise').length}'),
-            Kpi('CA cumulé', _usd(caTotal)),
-            Kpi(
-              'Meilleur client',
-              top == null || st(top).ca == 0 ? '—' : '${top['nom']}',
-              footer: top == null || st(top).ca == 0 ? null : Text(_usd(st(top).ca), style: TextStyle(color: muted)),
-            ),
-          ],
-        ),
-        if (partiel)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              'CA partiel : ton rôle ne donne pas accès à '
-              '${!widget.profile.can('voyage') ? 'Voyage' : ''}'
-              '${!widget.profile.can('voyage') && !widget.profile.can('fourniture') ? ' ni ' : ''}'
-              '${!widget.profile.can('fourniture') ? 'Fourniture' : ''}.',
-              style: TextStyle(color: muted, fontSize: 12.5),
-            ),
-          ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 10,
+          spacing: 14,
+          runSpacing: 12,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             SizedBox(
-              width: 300,
+              width: 460,
               child: TextField(
-                decoration: const InputDecoration(labelText: 'Rechercher', prefixIcon: Icon(Icons.search, size: 18)),
+                style: const TextStyle(fontSize: 17),
+                decoration: const InputDecoration(
+                  labelText: 'Chercher un client',
+                  hintText: 'Nom, téléphone ou ville',
+                  prefixIcon: Icon(Icons.search),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                ),
                 onChanged: (v) => setState(() => recherche = v),
               ),
             ),
             SizedBox(
-              width: 170,
-              child: dropdown<String>('Type', type, {
-                '': 'Tous',
-                ...typesClient,
-              }, (v) => setState(() => type = v ?? '')),
+              height: 56,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  textStyle: const TextStyle(fontFamily: Elk.font, fontSize: 16, fontWeight: FontWeight.w800),
+                ),
+                onPressed: loading ? null : () => _edit(),
+                icon: const Icon(Icons.person_add_alt),
+                label: const Text('Nouveau client'),
+              ),
             ),
-            SizedBox(
-              width: 170,
-              child: dropdown<String>('Tri', tri, const {
-                'nom': 'Par nom',
-                'ca': 'Par CA',
-              }, (v) => setState(() => tri = v ?? 'nom')),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final f in const [('', 'Tous'), ('particulier', 'Particuliers'), ('entreprise', 'Entreprises')])
+              ChoiceChip(
+                showCheckmark: false,
+                label: Text(f.$2),
+                selected: type == f.$1,
+                onSelected: (_) => setState(() => type = f.$1),
+              ),
+            const SizedBox(width: 12),
+            ChoiceChip(
+              showCheckmark: false,
+              avatar: const Icon(Icons.sort_by_alpha, size: 18),
+              label: const Text('De A à Z'),
+              selected: tri == 'nom',
+              onSelected: (_) => setState(() => tri = 'nom'),
             ),
+            ChoiceChip(
+              showCheckmark: false,
+              avatar: const Icon(Icons.star_outline, size: 18),
+              label: const Text('Meilleurs clients'),
+              selected: tri == 'ca',
+              onSelected: (_) => setState(() => tri = 'ca'),
+            ),
+            const SizedBox(width: 12),
             Text(
-              '${visibles.length} client${visibles.length > 1 ? 's' : ''}',
+              _pluriel(visibles.length, 'client'),
               style: const TextStyle(color: Elk.accentText, fontWeight: FontWeight.w700),
             ),
           ],
         ),
+        if (manque.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              'Les montants « a acheté pour » ne comptent pas ${manque.join(' ni ')} (votre rôle n’y a pas accès).',
+              style: TextStyle(color: muted, fontSize: 13),
+            ),
+          ),
         const SizedBox(height: 14),
         if (error != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Text('Erreur : $error', style: const TextStyle(color: Elk.crit)),
           ),
-        TableCard(
-          loading: loading,
-          empty: clients.isEmpty ? 'Aucun client. Clique « Nouveau client ».' : 'Aucun client ne correspond.',
-          columns: const [
-            DataColumn(label: Text('Nom')),
-            DataColumn(label: Text('Type')),
-            DataColumn(label: Text('Téléphone')),
-            DataColumn(label: Text('Ville')),
-            DataColumn(label: Text('Segment')),
-            DataColumn(label: Text('Dossiers'), numeric: true),
-            DataColumn(label: Text('Commandes'), numeric: true),
-            DataColumn(label: Text('CA cumulé'), numeric: true),
-            DataColumn(label: Text('')),
-          ],
-          rows: [
-            for (final c in visibles)
-              DataRow(
-                cells: [
-                  DataCell(Text('${c['nom']}', style: const TextStyle(fontWeight: FontWeight.w700))),
-                  DataCell(c['type'] == 'entreprise' ? const Pill('Entreprise', Elk.info) : Pill('Particulier', muted)),
-                  DataCell(Text('${c['telephone'] ?? '—'}')),
-                  DataCell(Text('${c['ville'] ?? '—'}')),
-                  DataCell((c['segment'] ?? '') == '' ? const Text('—') : Pill('${c['segment']}', Elk.accentText)),
-                  DataCell(Text('${st(c).dossiers}')),
-                  DataCell(Text('${st(c).commandes}')),
-                  DataCell(Text(_usd(st(c).ca), style: const TextStyle(fontWeight: FontWeight.w600))),
-                  DataCell(
-                    IconButton(
-                      tooltip: 'Modifier la fiche',
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      onPressed: () => _edit(c),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.all(30),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (visibles.isEmpty)
+          EtatVide(
+            icone: Icons.person_search_outlined,
+            texte: clients.isEmpty
+                ? 'Aucun client pour l’instant. Ajoutez-en un avec « Nouveau client ».'
+                : 'Aucun client ne correspond à « $recherche ».',
+          )
+        else
+          for (final c in visibles) _carte(c, st(c), muted),
+      ],
+    );
+  }
+
+  Widget _carte(JsonRow c, ClientStats s, Color muted) {
+    final nom = '${c['nom'] ?? ''}'.trim();
+    final initiales = nom
+        .split(RegExp(r'\s+'))
+        .where((x) => x.isNotEmpty)
+        .take(2)
+        .map((x) => x[0].toUpperCase())
+        .join();
+    final entreprise = c['type'] == 'entreprise';
+    final activite = [
+      if (s.dossiers > 0) _pluriel(s.dossiers, 'voyage'),
+      if (s.commandes > 0) _pluriel(s.commandes, 'commande'),
+    ];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _edit(c),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: entreprise ? Elk.navy2 : Elk.accent.withValues(alpha: .22),
+                child: entreprise
+                    ? const Icon(Icons.business, color: Colors.white)
+                    : Text(
+                        initiales,
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: Elk.navy),
+                      ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(nom, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                        if (entreprise) const Pill('Entreprise', Elk.info),
+                        if ((c['segment'] ?? '') != '') Pill('${c['segment']}', Elk.accentText),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 2),
+                    Wrap(
+                      spacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (c['telephone'] != null) ...[
+                          Icon(Icons.phone_outlined, size: 16, color: muted),
+                          Text('${c['telephone']}', style: TextStyle(color: muted, fontSize: 15)),
+                        ],
+                        if (c['telephone'] != null && c['ville'] != null)
+                          Text('  ·  ', style: TextStyle(color: muted, fontSize: 15)),
+                        if (c['ville'] != null) Text('${c['ville']}', style: TextStyle(color: muted, fontSize: 15)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (s.ca > 0) ...[
+                    Text('A acheté pour', style: TextStyle(color: muted, fontSize: 12.5)),
+                    Text(_usd(s.ca), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                    Text(activite.join(' · '), style: TextStyle(color: muted, fontSize: 12.5)),
+                  ] else
+                    Text('Pas encore d’achat', style: TextStyle(color: muted)),
                 ],
               ),
-          ],
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: muted),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -286,38 +361,99 @@ class _ClientDialogState extends State<_ClientDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(c == null ? 'Nouveau client' : 'Modifier ${c!['nom']}'),
+    title: Text(c == null ? 'Nouveau client' : 'Fiche de ${c!['nom']}'),
     content: SizedBox(
       width: 520,
       child: Form(
         key: _form,
-        child: formGrid([
-          TextFormField(
-            controller: _nom,
-            decoration: const InputDecoration(labelText: 'Nom'),
-            validator: (v) => (v ?? '').trim().isEmpty ? 'Nom requis' : null,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Etape('1', 'Particulier ou entreprise ?'),
+              Wrap(
+                spacing: 10,
+                children: [
+                  for (final t in const [
+                    ('particulier', 'Une personne', Icons.person_outline),
+                    ('entreprise', 'Une entreprise', Icons.business),
+                  ])
+                    ChoiceChip(
+                      showCheckmark: false,
+                      avatar: Icon(t.$3),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                        child: Text(t.$2, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ),
+                      selected: type == t.$1,
+                      onSelected: (_) => setState(() => type = t.$1),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Etape('2', 'Nom et téléphone'),
+              TextFormField(
+                controller: _nom,
+                style: const TextStyle(fontSize: 17),
+                decoration: InputDecoration(labelText: type == 'entreprise' ? 'Nom de l’entreprise' : 'Nom complet'),
+                validator: (v) => (v ?? '').trim().isEmpty ? 'Indiquez le nom' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _tel,
+                style: const TextStyle(fontSize: 17),
+                decoration: const InputDecoration(labelText: 'Téléphone', hintText: '+243…'),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 8),
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  initiallyExpanded: c != null,
+                  title: const Text('Plus d’informations (facultatif)', style: TextStyle(fontWeight: FontWeight.w700)),
+                  childrenPadding: const EdgeInsets.only(bottom: 6),
+                  children: [
+                    formGrid([
+                      TextFormField(
+                        controller: _ville,
+                        decoration: const InputDecoration(labelText: 'Ville'),
+                      ),
+                      TextFormField(
+                        controller: _email,
+                        decoration: const InputDecoration(labelText: 'E-mail'),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) => (v ?? '').trim().isEmpty || (v!.contains('@') && v.contains('.'))
+                            ? null
+                            : 'E-mail invalide',
+                      ),
+                    ]),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text('Type de client :', style: TextStyle(color: Theme.of(context).hintColor)),
+                          for (final s in segments)
+                            ChoiceChip(
+                              showCheckmark: false,
+                              label: Text(s.isEmpty ? 'Aucun' : s),
+                              selected: segment == s,
+                              onSelected: (_) => setState(() => segment = s),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          dropdown<String>('Type', type, typesClient, (v) => type = v ?? type),
-          TextFormField(
-            controller: _tel,
-            decoration: const InputDecoration(labelText: 'Téléphone', hintText: '+243…'),
-            keyboardType: TextInputType.phone,
-          ),
-          TextFormField(
-            controller: _ville,
-            decoration: const InputDecoration(labelText: 'Ville'),
-          ),
-          TextFormField(
-            controller: _email,
-            decoration: const InputDecoration(labelText: 'E-mail'),
-            keyboardType: TextInputType.emailAddress,
-            validator: (v) =>
-                (v ?? '').trim().isEmpty || (v!.contains('@') && v.contains('.')) ? null : 'E-mail invalide',
-          ),
-          dropdown<String>('Segment', segment, {
-            for (final s in segments) s: s.isEmpty ? '—' : s,
-          }, (v) => segment = v ?? ''),
-        ]),
+        ),
       ),
     ),
     actions: [

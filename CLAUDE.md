@@ -119,7 +119,7 @@ Voir `docs/roadmap.md`. Rôles ✅, app agents Flutter complète (Voyage, Caisse
 
 ## App agents Flutter (`agents/`)
 - Écrans dans `agents/lib/ui/pages/`, déclarés dans `agents/lib/ui/modules.dart` avec leur permission
-  (`voyage`, `caisse`, `momo`, `fourniture`, `clients`). `voyage_page.dart` / `caisse_page.dart` / `momo_page.dart` = modèles.
+  (`voyage`, `caisse`, `momo`, `fourniture`, `clients`). `voyage_page.dart` / `caisse_page.dart` / `momo_page.dart` / `fourniture_page.dart` = modèles (tous les écrans sont en cartes, plus de tableaux).
 - **Interface très simple** (agents peu à l’aise avec l’ordinateur) : l’app s’ouvre sur `accueil_page.dart`
   (gros boutons + « À faire aujourd’hui »). Un bouton d’accueil ouvre un module avec une action via
   `Navigation.aller(module, action)` ; la page la consomme après chargement avec `Navigation.prendreAction(module)`.
