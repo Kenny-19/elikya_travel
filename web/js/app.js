@@ -58,6 +58,8 @@
     if(!m || (m.superAdmin && !Elikya.superAdmin)) m = Elikya.modules[0];   // #admin sans droit → accueil
     if(!m) return;
     current = m.id;
+    menu(false);
+    var mt = document.getElementById('mtitle'); if(mt) mt.textContent = m.label;
     document.querySelectorAll('#nav a').forEach(function(a){ a.classList.toggle('on', a.dataset.mod===m.id); });
     try{ if(location.hash.slice(1)!==m.id) history.replaceState(null,'','#'+m.id); }catch(e){}
     var root = document.getElementById('moduleRoot');
@@ -66,6 +68,22 @@
       root.innerHTML = '<div class="card"><p style="color:var(--crit)">Erreur module : '+err.message+'</p></div>';
     });
   }
+
+  // ----- Menu téléphone : la barre latérale glisse depuis la gauche -----
+  function menu(ouvrir){
+    document.body.classList.toggle('menu-ouvert', !!ouvrir);
+    var b = document.getElementById('menuBtn'); if(b) b.setAttribute('aria-expanded', ouvrir ? 'true' : 'false');
+  }
+  var menuBtn = document.getElementById('menuBtn');
+  if(menuBtn) menuBtn.addEventListener('click', function(){ menu(!document.body.classList.contains('menu-ouvert')); });
+  var scrim = document.getElementById('scrim');
+  if(scrim) scrim.addEventListener('click', function(){ menu(false); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') menu(false); });
+  // liens internes (<a href="#voyage">) : changer d'écran sans recharger
+  window.addEventListener('hashchange', function(){
+    var id = location.hash.slice(1);
+    if(id && id !== current && Elikya.user) route(id);
+  });
 
   // ----- Entrée cachée du super admin -----
   // Ctrl+Maj+A, ou 5 clics rapides sur le logo de la barre latérale, ou l'adresse …/#admin.

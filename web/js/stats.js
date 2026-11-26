@@ -307,7 +307,97 @@
     return { max:top, step:step, ticks:ticks };
   }
 
-  var api = { MODULES:MODULES, dayKey:dayKey, periodRange:periodRange, monthRange:monthRange, journal:journal,
+  // ----- Page « Aujourd'hui » (vue globale de la direction) -----
+  /** Caisse de chaque agent pour le jour donné :
+      [{agent_id, nom, etat:'ouverte'|'fermee'|'oubliee'|'pas_ouverte', enCaisse, entrees, sorties, ecart, jour}]
+      Agents pris en compte = ceux qui ont eu une caisse dans les sessions fournies (ex. 30 derniers jours).
+      'oubliee' = pas de caisse aujourd'hui mais une ancienne restée ouverte. */
+  function caissesAgents(src, today){
+    var taux = tauxMap(src.devises), parSession = {};
+    (src.mouvements_caisse||[]).forEach(function(m){
+      var s = parSession[m.session_id] = parSession[m.session_id] || { in:0, out:0 };
+      var v = toUsd(m.montant, m.devise_id, taux);
+      if(m.sens === 'entree') s.in += v; else s.out += v;
+    });
+    var noms = {}; (src.users||[]).forEach(function(u){ noms[u.id] = u.nom; });
+    var parAgentMap = {};
+    (src.caisse_sessions||[]).forEach(function(s){
+      var k = s.agent_id || '_';
+      (parAgentMap[k] = parAgentMap[k] || []).push(s);
+    });
+    var rank = { ouverte:0, oubliee:1, pas_ouverte:2, fermee:3 };
+    return Object.keys(parAgentMap).map(function(k){
+      var list = parAgentMap[k];
+      var nom = noms[k] || (list[0].users && list[0].users.nom) || (k === '_' ? 'Sans agent' : 'Agent');
+      var duJour = list.filter(function(s){ return s.jour === today; })[0];
+      var vieille = list.filter(function(s){ return s.jour < today && s.statut === 'ouverte'; })
+        .sort(function(a, b){ return a.jour < b.jour ? 1 : -1; })[0];
+      var s = duJour || vieille;
+      var r = { agent_id: k === '_' ? null : k, nom:nom, etat:'pas_ouverte', enCaisse:0, entrees:0, sorties:0, ecart:null, jour: s ? s.jour : null };
+      if(s){
+        var x = parSession[s.id] || { in:0, out:0 };
+        r.entrees = round2(x.in); r.sorties = round2(x.out);
+        r.enCaisse = round2(num(s.solde_ouverture) + x.in - x.out);
+        if(!duJour) r.etat = 'oubliee';
+        else if(s.statut === 'cloturee'){ r.etat = 'fermee'; if(s.solde_cloture != null) r.ecart = round2(num(s.solde_cloture) - r.enCaisse); }
+        else r.etat = 'ouverte';
+      }
+      return r;
+    }).sort(function(a, b){ return rank[a.etat] - rank[b.etat] || (a.nom < b.nom ? -1 : 1); });
+  }
+
+  var TYPES_DOSSIER = { billet:'Billet d’avion', visa:'Visa', hotel:'Hôtel', assurance:'Assurance', package:'Voyage organisé' };
+  var TYPES_MOMO = { depot:'Dépôt', retrait:'Retrait', transfert:'Transfert' };
+  var OPS_MOMO = { airtel:'Airtel Money', orange:'Orange Money', mpesa:'M-Pesa' };
+  /** « Qui a fait quoi » sur un jour : [{quand (ISO), agent_id, agent, module, texte, montant (USD|null), signe:+1|-1|0, etat}]
+      du plus récent au plus ancien. Un mouvement de caisse lié à un encaissement (source_type 'paiement')
+      n'est pas répété : l'encaissement suffit. */
+  function filDuJour(src, today){
+    var taux = tauxMap(src.devises), out = [];
+    var noms = {}; (src.users||[]).forEach(function(u){ noms[u.id] = u.nom; });
+    var clients = {}; (src.clients||[]).forEach(function(c){ clients[c.id] = c.nom; });
+    function client(x){ return (x.clients && x.clients.nom) || clients[x.client_id] || ''; }
+    function du(x){ return dayKey(x.cree_le) === today; }
+    function add(x, agentId, module, texte, montant, signe, etat){
+      out.push({ quand:x.cree_le, agent_id:agentId||null, agent: agentId ? (noms[agentId] || 'Agent') : '', module:module,
+                 texte:texte, montant: montant == null ? null : round2(montant), signe:signe||0, etat:etat||null });
+    }
+    var refs = {};
+    (src.dossiers||[]).forEach(function(d){ refs['dossier:'+d.id] = d.ref; });
+    (src.locations||[]).forEach(function(l){ refs['location:'+l.id] = l.ref; });
+    (src.commandes||[]).forEach(function(c){ refs['commande:'+c.id] = c.ref; });
+
+    (src.dossiers||[]).filter(du).forEach(function(d){
+      add(d, d.agent_id, 'Voyage', (d.statut === 'devis' ? 'Devis ' : 'Nouveau dossier ')+(TYPES_DOSSIER[d.type]||d.type||'')+
+        (d.destination ? ' · '+d.destination : '')+(client(d) ? ' · '+client(d) : ''), toUsd(d.montant, d.devise_id, taux), 0,
+        d.statut === 'annule' ? 'annule' : null);
+    });
+    (src.paiements||[]).filter(du).forEach(function(p){
+      var mod = p.source_type === 'location' ? 'Location' : p.source_type === 'commande' ? 'Fourniture' : 'Voyage';
+      var ref = refs[p.source_type+':'+p.source_id];
+      add(p, p.recu_par, mod, 'Paiement reçu'+(ref ? ' · '+ref : ''), toUsd(p.montant, p.devise_id, taux), 1);
+    });
+    var paiementIds = {}; (src.paiements||[]).forEach(function(p){ paiementIds[p.id] = true; });
+    (src.mouvements_caisse||[]).filter(du).forEach(function(m){
+      if(m.source_type === 'paiement' && m.source_id && paiementIds[m.source_id]) return;
+      var e = m.sens === 'entree';
+      add(m, m.agent_id, 'Caisse', (e ? 'Argent reçu · ' : 'Argent sorti · ')+(m.libelle||''), toUsd(m.montant, m.devise_id, taux), e ? 1 : -1);
+    });
+    (src.momo_transactions||[]).filter(du).forEach(function(t){
+      var op = t.momo_comptes && t.momo_comptes.operateur;
+      add(t, t.agent_id, 'Mobile Money', (TYPES_MOMO[t.type]||t.type||'Opération')+(op ? ' · '+(OPS_MOMO[op]||op) : ''), num(t.montant), 0, t.statut);
+    });
+    (src.commandes||[]).filter(du).forEach(function(c){
+      add(c, null, 'Fourniture', 'Commande '+(c.ref||'')+(client(c) ? ' · '+client(c) : ''), num(c.total), 0, c.statut === 'annulee' ? 'annule' : null);
+    });
+    (src.locations||[]).filter(du).forEach(function(l){
+      add(l, l.agent_id, 'Location', 'Location '+(l.ref||'')+(client(l) ? ' · '+client(l) : ''), toUsd(l.montant, l.devise_id, taux), 0,
+        l.statut === 'annulee' ? 'annule' : null);
+    });
+    return out.sort(function(a, b){ return String(a.quand) < String(b.quand) ? 1 : -1; });
+  }
+
+  var api = { MODULES:MODULES, caissesAgents:caissesAgents, filDuJour:filDuJour, dayKey:dayKey, periodRange:periodRange, monthRange:monthRange, journal:journal,
     totals:totals, delta:delta, frDate:frDate, daily:daily, caisse:caisse, alertes:alertes, parAgent:parAgent,
     topClients:topClients, reservations:reservations, statsClients:statsClients, toCsv:toCsv,
     voyAvancement:voyAvancement, voyPaiementsDe:voyPaiementsDe, voyPaiement:voyPaiement,

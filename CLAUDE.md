@@ -54,7 +54,7 @@ web/js/stats.js         # calculs tableau de bord / rapports (fonctions pures, t
 web/js/charts.js        # graphique SVG colonnes empilées (légende, info-bulle, tableau des valeurs)
 web/vendor/supabase.js  # copie locale de supabase-js (hors ligne)
 web/js/app.js           # boot : auth, sidebar, routage des modules
-web/js/modules/*.js     # un fichier par module (tous faits : dashboard, voyage, caisse, momo, fourniture, clients, rapports)
+web/js/modules/*.js     # un fichier par module : aujourdhui (accueil = vue globale du jour), dashboard, rapports, voyage, location, caisse, momo, fourniture, clients, admin
 docs/                   # architecture.md, roadmap.md
 ```
 
@@ -100,6 +100,8 @@ formulaire à lignes multiples, `dashboard.js` / `rapports.js` les calculs (`sta
 - Statuts → pastilles via `Elikya.h.pill(label, kind)` (`ok|warn|crit|info|neutral`).
 - Couleurs et espacements : **uniquement** via les tokens de `styles.css` (clair + sombre).
 - **Suivi only** : ne pas introduire de logique de paiement/compensation d'argent.
+- **Site = vue globale, sur téléphone ET ordinateur** : page d’accueil « Aujourd’hui » (`aujourdhui.js`). Sous 820 px la barre
+  latérale devient un menu qui glisse (`.mtop` + `body.menu-ouvert`) ; aucun écran ne doit déborder en largeur. Liens internes : `<a href="#module">`.
 - **Site = lecture seule** (`Elikya.readOnly`) : tout bouton / formulaire de saisie d'un module du site porte `data-ecriture` (masqué).
 - **Super admin** (`Elikya.superAdmin`, permission `admin`, un seul compte) : entrée cachée `#admin`
   (Ctrl+Maj+A ; module `admin.js` avec `hidden:true` + `superAdmin:true`), saisie réactivée.

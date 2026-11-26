@@ -39,7 +39,11 @@
       <button class="lo" id="logout">Quitter</button>
     </div>
   </aside>
-  <div class="main"><div class="netbar hidden" id="netBar"></div><div class="content"><div class="wrap">
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <!-- téléphone : barre du haut + menu qui glisse (la barre latérale est cachée sous 820 px) -->
+    <header class="mtop"><button class="mmenu" id="menuBtn" aria-label="Ouvrir le menu" aria-expanded="false"><span></span><span></span><span></span></button><img src="assets/brand/elikya-mark.svg" alt=""><b id="mtitle">Elikya Group</b></header>
+    <div class="netbar hidden" id="netBar"></div><div class="content"><div class="wrap">
     <div id="moduleRoot"></div>
   </div></div></div>
 </div>
@@ -57,7 +61,8 @@
 <script src="js/data.js"></script>
 <script src="js/stats.js"></script>
 <script src="js/charts.js"></script>
-<!-- Modules (tableau de bord en premier = page d'accueil de la direction) -->
+<!-- Modules (« Aujourd’hui » en premier = page d'accueil de la direction) -->
+<script src="js/modules/aujourdhui.js"></script>
 <script src="js/modules/dashboard.js"></script>
 <script src="js/modules/voyage.js"></script>
 <script src="js/modules/location.js"></script>

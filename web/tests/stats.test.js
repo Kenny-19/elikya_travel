@@ -214,3 +214,53 @@ test('alerte : départ proche pas soldé', () => {
   }, NOW);
   assert.deepEqual(a.map((x) => x.texte), ['Départ le 24/11/2026 pas soldé : ELK-1 (Patrick) — reste 300 $']);
 });
+
+test('aujourd’hui : caisse de chaque agent (ouverte, fermée avec écart, oubliée, pas ouverte)', () => {
+  const r = S.caissesAgents({
+    devises,
+    users: [{ id: 'u1', nom: 'Grace' }, { id: 'u2', nom: 'Patrick' }, { id: 'u3', nom: 'Rachel' }, { id: 'u4', nom: 'Joël' }],
+    caisse_sessions: [
+      { id: 'a', agent_id: 'u1', jour: '2026-11-22', solde_ouverture: 100, statut: 'ouverte' },
+      { id: 'b', agent_id: 'u2', jour: '2026-11-22', solde_ouverture: 50, statut: 'cloturee', solde_cloture: 40 },
+      { id: 'c', agent_id: 'u3', jour: '2026-11-20', solde_ouverture: 30, statut: 'ouverte' },
+      { id: 'd', agent_id: 'u4', jour: '2026-11-21', solde_ouverture: 10, statut: 'cloturee', solde_cloture: 10 },
+    ],
+    mouvements_caisse: [
+      { session_id: 'a', sens: 'entree', montant: 50, devise_id: 1 },
+      { session_id: 'a', sens: 'sortie', montant: 2800, devise_id: 2 },
+      { session_id: 'b', sens: 'sortie', montant: 5, devise_id: 1 },
+    ],
+  }, '2026-11-22');
+  assert.deepEqual(r.map((x) => [x.nom, x.etat, x.enCaisse, x.ecart]), [
+    ['Grace', 'ouverte', 149, null],
+    ['Rachel', 'oubliee', 30, null],
+    ['Joël', 'pas_ouverte', 0, null],
+    ['Patrick', 'fermee', 45, -5],
+  ]);
+});
+
+test('aujourd’hui : qui a fait quoi (encaissement non répété par la caisse)', () => {
+  const t = (h) => new Date(2026, 10, 22, h).toISOString();
+  const f = S.filDuJour({
+    devises,
+    users: [{ id: 'u1', nom: 'Grace' }, { id: 'u3', nom: 'Rachel' }],
+    clients: [{ id: 'c1', nom: 'Patrick' }],
+    dossiers: [
+      { id: 'd1', ref: 'ELK-1', type: 'visa', destination: 'Dubaï', client_id: 'c1', agent_id: 'u1', montant: 280000, devise_id: 2, statut: 'confirme', cree_le: t(9) },
+      { id: 'd0', ref: 'ELK-0', type: 'billet', client_id: 'c1', agent_id: 'u1', montant: 500, devise_id: 1, statut: 'confirme', cree_le: new Date(2026, 10, 21, 9).toISOString() },
+    ],
+    paiements: [{ id: 'p1', source_type: 'dossier', source_id: 'd1', montant: 60, devise_id: 1, recu_par: 'u1', cree_le: t(10) }],
+    mouvements_caisse: [
+      { id: 'm1', sens: 'entree', libelle: 'Visa · ELK-1', montant: 60, devise_id: 1, agent_id: 'u1', source_type: 'paiement', source_id: 'p1', cree_le: t(10) },
+      { id: 'm2', sens: 'sortie', libelle: 'Carburant', montant: 10, devise_id: 1, agent_id: 'u1', cree_le: t(11) },
+    ],
+    momo_transactions: [{ id: 'x', type: 'depot', momo_comptes: { operateur: 'airtel' }, montant: 120, statut: 'en_attente', agent_id: 'u3', cree_le: t(12) }],
+  }, '2026-11-22');
+  assert.deepEqual(f.map((e) => [e.agent, e.module, e.texte, e.montant, e.signe]), [
+    ['Rachel', 'Mobile Money', 'Dépôt · Airtel Money', 120, 0],
+    ['Grace', 'Caisse', 'Argent sorti · Carburant', 10, -1],
+    ['Grace', 'Voyage', 'Paiement reçu · ELK-1', 60, 1],
+    ['Grace', 'Voyage', 'Nouveau dossier Visa · Dubaï · Patrick', 100, 0],
+  ]);
+  assert.equal(f[0].etat, 'en_attente');
+});
